@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Tab 1
+      Food App Scanner v1.0 Beta
     </ion-title>
   </ion-toolbar>
 </ion-header>
@@ -13,5 +13,45 @@
     </ion-toolbar>
   </ion-header>
 
-  <app-explore-container name="Tab 1 page"></app-explore-container>
+  <ng-container>
+    <div class="container">
+      <ion-button class="scanBarcodeBtn" id="open-modal" expand="block">Scan Barcode</ion-button>
+      <p>Note: This app only works with products that have nutritional facts in English.</p>
+    </div>
+
+    <ion-modal trigger="open-modal" (willDismiss)="onWillDismiss($event)">
+      <ng-template>
+        <ion-header>
+          <ion-toolbar>
+            <ion-buttons slot="start">
+              <ion-button (click)="cancel()">Cancel</ion-button>
+            </ion-buttons>
+            <ion-title class="modal-title" >Scan Barcode</ion-title>
+            <ion-buttons slot="end">
+              <ion-button (click)="confirm()" [strong]="true">Submit</ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          
+          <ion-item>
+            <ion-input label="Enter Barcode" labelPlacement="stacked" type="text" placeholder="102311232"
+              [(ngModel)]="name"></ion-input>
+          </ion-item>
+          
+          <ion-button class="scanWithCameraBtn" id="open-toast" expand="block" ><ion-icon aria-hidden="true" name="barcode-outline"></ion-icon> Scan with Camera</ion-button>
+          <ion-toast
+            trigger="open-toast"
+            message="Sorry, not availiable yet :("
+            [duration]="3000"
+            [buttons]="toastButtons"
+            (didDismiss)="setRoleMessage($event)"
+          ></ion-toast>
+
+        </ion-content>
+      </ng-template>
+    </ion-modal>
+
+  </ng-container>
+
 </ion-content>
