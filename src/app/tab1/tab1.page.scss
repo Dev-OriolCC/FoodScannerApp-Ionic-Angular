@@ -1,4 +1,5 @@
-.container, p {
+.container,
+p {
     text-align: center;
 
     position: absolute;
@@ -8,7 +9,7 @@
     transform: translateY(-50%);
 }
 
-.scanBarcodeBtn {    
+.scanBarcodeBtn {
     --background: #5fc592;
     --color: rgb(253, 253, 253);
     --border-radius: 0;
@@ -18,7 +19,9 @@
     margin-left: 20px;
     margin-right: 20px;
 }
-
+.submitBtn { 
+    color: #5fc592;
+}
 .scanWithCameraBtn {
     --background: #5fc592;
     --color: rgb(253, 253, 253);
@@ -32,13 +35,53 @@
     margin-right: 20px;
 }
 
-p { 
+p {
     margin-top: 50px;
     font-size: small;
     margin-left: 20px;
     margin-right: 20px;
 }
 
-.modal-title { 
+.modal-title {
     text-align: center;
+}
+
+/** Circle Loading **/
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+
+}
+
+ion-spinner {
+    height: 20%;
+    width: 20%;
+    color: #5fc592
+}
+
+.centered-content { 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%; 
+    text-align: center;
+}
+
+.formInput { 
+    //margin-bottom: 20px;
+}
+
+.productName {
+    font-weight: 600;
+    font-size: 22px;
+}
+
+.productCode { 
+    font-size: 20px;
+}
+.productNutriScore {
+    font-size: 20px;
 }

@@ -21,32 +21,110 @@
 
     <ion-modal trigger="open-modal" (willDismiss)="onWillDismiss($event)">
       <ng-template>
+        <ng-container *ngIf="isLoading">
+          <div class="flex-center">
+            <ion-spinner name="crescent"></ion-spinner>
+          </div>
+        </ng-container>
         <ion-header>
           <ion-toolbar>
             <ion-buttons slot="start">
               <ion-button (click)="cancel()">Cancel</ion-button>
             </ion-buttons>
-            <ion-title class="modal-title" >Scan Barcode</ion-title>
+            <ion-title *ngIf="!isLoading" class="modal-title">Scan Barcode</ion-title>
             <ion-buttons slot="end">
-              <ion-button (click)="confirm()" [strong]="true">Submit</ion-button>
+              <ion-button (click)="confirm()" [strong]="true" [disabled]="!name" *ngIf="!isLoading" class="submitBtn">Submit</ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          
+
           <ion-item>
             <ion-input label="Enter Barcode" labelPlacement="stacked" type="text" placeholder="102311232"
               [(ngModel)]="name"></ion-input>
           </ion-item>
-          
-          <ion-button class="scanWithCameraBtn" id="open-toast" expand="block" ><ion-icon aria-hidden="true" name="barcode-outline"></ion-icon> Scan with Camera</ion-button>
-          <ion-toast
-            trigger="open-toast"
-            message="Sorry, not availiable yet :("
-            [duration]="3000"
-            [buttons]="toastButtons"
-            (didDismiss)="setRoleMessage($event)"
-          ></ion-toast>
+
+          <ion-button class="scanWithCameraBtn" id="open-toast" expand="block"><ion-icon aria-hidden="true"
+              name="barcode-outline"></ion-icon> Scan with Camera</ion-button>
+          <ion-toast trigger="open-toast" message="Sorry, not availiable yet :(" [duration]="3000"
+            [buttons]="toastButtons" (didDismiss)="setRoleMessage($event)"></ion-toast>
+        </ion-content>
+      </ng-template>
+    </ion-modal>
+
+    <!-- Second Modal -->
+    <ion-modal [isOpen]="isModalOpen">
+      <ng-template>
+        <ion-header>
+          <ion-toolbar>
+            <ion-buttons slot="start">
+              <ion-button (click)="setOpen(false)">Close</ion-button>
+            </ion-buttons>
+            <ion-title class="modal-title">Scan Successfully</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <div class="centered-content">
+            <ion-text>
+              <h1 class="productName" >Hershey's Chocolate 100g</h1>
+            </ion-text>
+        
+            <ion-text>
+              <h2  class="productCode">[ 04778291 ]</h2>
+            </ion-text>
+            <ion-text>
+              <h2  class="productNutriScore">Nutri-Score</h2>
+            </ion-text>
+        
+
+            <ion-text>
+              <h2  class="productNutriScore">Exccesive Table</h2>
+            </ion-text>
+            <ion-grid>
+              
+              <ion-row>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Calories" class="formInput" value="YES" [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Sugar" class="formInput" value="YES" [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+              </ion-row>
+
+              <ion-row>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Sat. Fat" class="formInput" value="YES" [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Salt" class="formInput" value="NO" [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+              </ion-row>
+
+              <ion-row>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Caffeine" class="formInput" value="NO" [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Colorant" class="formInput" value="NO" [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+              </ion-row>
+
+
+            </ion-grid>
+            
+          </div>
 
         </ion-content>
       </ng-template>
