@@ -53,8 +53,8 @@
     </ion-modal>
 
     <!-- Second Modal -->
-    <ion-modal [isOpen]="isModalOpen">
-      <ng-template>
+    <ion-modal [isOpen]="isModalOpen" *ngIf="productState$ | async as productState" >
+      <ng-template >
         <ion-header>
           <ion-toolbar>
             <ion-buttons slot="start">
@@ -66,16 +66,30 @@
         <ion-content class="ion-padding">
           <div class="centered-content">
             <ion-text>
-              <h1 class="productName" >Hershey's Chocolate 100g</h1>
+              <h1 class="productName" >{{ productState.appData?.data?.product?.productName }}</h1>
             </ion-text>
         
             <ion-text>
-              <h2  class="productCode">[ 04778291 ]</h2>
+              <h2  class="productCode">[ {{productState.appData?.data?.product?.code}} ]</h2>
             </ion-text>
             <ion-text>
               <h2  class="productNutriScore">Nutri-Score</h2>
             </ion-text>
-        
+            <div [ngSwitch]="productState.appData?.data?.product?.scoreLetter">
+              <img *ngSwitchCase="'A'" src="../../assets/score/nutriScoreA.jpg" alt="Nutri-Score=A" class="nutriScoreImg" />
+              <img *ngSwitchCase="'B'" src="../../assets/score/nutriScoreB.jpg" alt="Nutri-Score=B" class="nutriScoreImg" />
+              <img *ngSwitchCase="'C'" src="../../assets/score/nutriScoreC.jpg" alt="Nutri-Score=C" class="nutriScoreImg" />
+              <img *ngSwitchCase="'D'" src="../../assets/score/nutriScoreD.jpg" alt="Nutri-Score=D" class="nutriScoreImg" />
+              <img *ngSwitchCase="'E'" src="../../assets/score/nutriScoreE.jpg" alt="Nutri-Score=E" class="nutriScoreImg" />
+            </div>
+            
+            <!-- Stickers Exccesive -->
+            <div class="image-row">
+              <img *ngFor="let img of productImages" [src]="img.src" [alt]="img.alt" class="stickerImg" />
+            </div>
+            <!-- Sticker_Labels -->
+            <img *ngIf="productState.appData?.data?.product?.caffeine" src="../../assets/stickers/caffeine.png" alt="ExccesiveCaffeine" class="labelImg" />
+            <img *ngIf="productState.appData?.data?.product?.colorant" src="../../assets/stickers/colorant.png" alt="ExccesiveColorant" class="labelImg" />
 
             <ion-text>
               <h2  class="productNutriScore">Exccesive Table</h2>
@@ -84,26 +98,17 @@
               
               <ion-row>
                 <ion-col>
-                  <ion-item>
-                    <ion-input label="Calories" class="formInput" value="YES" [disabled]="true"></ion-input>
+                  <ion-item class="formInput">
+                    <ion-input label="Calories" class="formInput" 
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.isCalories === false, 'red-text': productState.appData?.data?.product?.isCalories === true}"
+                    value="{{ productState.appData?.data?.product?.isCalories === true ? 'YES' : 'NO'}}" [disabled]="true"></ion-input>
                   </ion-item>
                 </ion-col>
                 <ion-col>
                   <ion-item>
-                    <ion-input label="Sugar" class="formInput" value="YES" [disabled]="true"></ion-input>
-                  </ion-item>
-                </ion-col>
-              </ion-row>
-
-              <ion-row>
-                <ion-col>
-                  <ion-item>
-                    <ion-input label="Sat. Fat" class="formInput" value="YES" [disabled]="true"></ion-input>
-                  </ion-item>
-                </ion-col>
-                <ion-col>
-                  <ion-item>
-                    <ion-input label="Salt" class="formInput" value="NO" [disabled]="true"></ion-input>
+                    <ion-input label="Sugar" class="formInput" 
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.isSugars === false, 'red-text': productState.appData?.data?.product?.isSugars === true}"
+                    value="{{ productState.appData?.data?.product?.isCalories === true ? 'YES' : 'NO'}}"  [disabled]="true"></ion-input>
                   </ion-item>
                 </ion-col>
               </ion-row>
@@ -111,12 +116,37 @@
               <ion-row>
                 <ion-col>
                   <ion-item>
-                    <ion-input label="Caffeine" class="formInput" value="NO" [disabled]="true"></ion-input>
+                    <ion-input label="Sat. Fat" class="formInput" 
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.isSaturatedFat === false, 'red-text': productState.appData?.data?.product?.isSaturatedFat === true}"
+                    value="{{ productState.appData?.data?.product?.isSaturatedFat === true ? 'YES' : 'NO'}}"
+                    [disabled]="true"></ion-input>
                   </ion-item>
                 </ion-col>
                 <ion-col>
                   <ion-item>
-                    <ion-input label="Colorant" class="formInput" value="NO" [disabled]="true"></ion-input>
+                    <ion-input label="Salt" class="formInput"
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.isSalt === false, 'red-text': productState.appData?.data?.product?.isSalt === true}"
+                    value="{{ productState.appData?.data?.product?.isSalt === true ? 'YES' : 'NO'}}"
+                    [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+              </ion-row>
+
+              <ion-row>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Caffeine" class="formInput"
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.caffeine === false, 'red-text': productState.appData?.data?.product?.caffeine === true}"
+                    value="{{ productState.appData?.data?.product?.caffeine === true ? 'YES' : 'NO'}}"
+                    [disabled]="true"></ion-input>
+                  </ion-item>
+                </ion-col>
+                <ion-col>
+                  <ion-item>
+                    <ion-input label="Colorant" class="formInput" 
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.colorant === false, 'red-text': productState.appData?.data?.product?.colorant === true}"
+                    value="{{ productState.appData?.data?.product?.colorant === true ? 'YES' : 'NO'}}"
+                    [disabled]="true"></ion-input>
                   </ion-item>
                 </ion-col>
               </ion-row>
@@ -125,10 +155,12 @@
             </ion-grid>
             
           </div>
-
+          
         </ion-content>
-      </ng-template>
+
+      </ng-template>      
     </ion-modal>
+
 
   </ng-container>
 

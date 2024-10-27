@@ -1,0 +1,26 @@
+ion-item {
+    --inner-padding-end: 0;
+    /* Removes extra padding for a tighter layout */
+}
+
+.action-boxes {
+    display: flex;
+    gap: 8px;
+    /* Space between buttons */
+    margin-top: 8px;
+    /* Space from the label */
+    flex-wrap: wrap;
+}
+
+.box-button {
+    --border-radius: 6px;
+    --padding-start: 10px;
+    --padding-end: 10px;
+    // --ion-color-primary: #5fc592;
+    /* Custom color for buttons */
+    --color: #fff;
+    /* Text color */
+    // --background: var(--ion-color-primary);
+    /* Background color */
+    width: auto;
+}

@@ -1,2 +1,9 @@
 // For information on how to create your own theme, please see:
 // http://ionicframework.com/docs/theming/
+:root {
+    --ion-tab-bar-background: #121212; /* Background color for the tab bar */
+    --ion-tab-bar-border-color: #121212; /* Border color at the top of the tab bar */
+    --ion-tab-bar-color: #817979; /* Color for inactive tab buttons */
+    --ion-color-primary: #5fc592; /* This is the primary color for your app */
+    --ion-tab-bar-color-active: var(--ion-color-primary); 
+}

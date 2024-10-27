@@ -19,7 +19,6 @@ export class Tab1Page {
   * [ngClass]="{'green-text': caloriesValue === 'NO', 'red-text': caloriesValue === 'YES'}"
   */
 
-  
   isModalOpen = false
   message = 'This modal example uses triggers to automatically open a modal when the button is clicked.';
   name: string | undefined;
@@ -31,47 +30,48 @@ export class Tab1Page {
   readonly DataState = DataState
   
   @ViewChild(IonModal) modal: IonModal | undefined;
-  
+
+  productImages: { condition: boolean | undefined; src: string; alt: string; }[] | undefined;
   constructor(private scannerService: ScannerService) {}
   
   cancel() {
+    this.name = ""
     this.modal?.dismiss(null, 'cancel');
   }
   
   confirm() {
     this.isLoading = true;
-    
-    this.productState$ = this.scannerService.$product("666600").pipe(
+    console.log('confirm')
+
+    this.productState$ = this.scannerService.$product(this.name != undefined ? this.name : "").pipe(
       map(response => {
         this.dataSubject.next(response);
         console.log(response.data);
-        setTimeout(() => { 
-          this.isLoading = false;
-          this.isModalOpen = true
-        }, 4000)
-        //this.isLoading = false;
+        this.productImages = [
+          { condition: response.data?.product?.isCalories, src: '../../assets/stickers/calories.png', alt: 'Excessive Calories' },
+          { condition: response.data?.product?.isSugars, src: '../../assets/stickers/sugars.png', alt: 'Excessive Sugars' },
+          { condition: response.data?.product?.isSaturatedFat, src: '../../assets/stickers/saturated.png', alt: 'Excessive Saturated Fat' },
+          { condition: response.data?.product?.isSalt, src: '../../assets/stickers/salt.png', alt: 'Excessive Salt' }
+        ].filter(img => img.condition);
+        
+        this.isLoading = false;
+        this.isModalOpen = true
         
         return { dataState: DataState.LOADED, appData: response};
       }),
       startWith({ dataState: DataState.LOADING }),
       catchError((error: string) => {
-        console.log(error);
-        setTimeout(() => { 
+        console.log("[CATCH ERROR]: "+error);
+        setTimeout(() => {
           this.isLoading = false;
-        }, 4000)
-        //this.isLoading = false;
+        }, 2000)
         return of({ dataState: DataState.ERROR, error: error });
       })
     )
-    //     .subscribe(result => {
-    //   console.log(result);
-    //   //this.productState$ = result.dataState;
-    // });
-
-    console.log(this.productState$.subscribe(result=> console.log(result)));
-
-    
   }
+
+  
+
   
   onWillDismiss(event: Event) {
     const ev = event as CustomEvent<OverlayEventDetail<string>>;
@@ -105,6 +105,20 @@ export class Tab1Page {
   ];
   
   setRoleMessage($event: IonToastCustomEvent<OverlayEventDetail<any>>) {
+    throw new Error('Method not implemented.');
+  }
+
+  public toastErrorButtons = [
+    {
+      text: 'Dismiss',
+      role: 'cancel',
+      handler: () => {
+        console.log('Dismiss clicked');
+      },
+    },
+  ];
+
+  setErrorMessage($event: IonToastCustomEvent<OverlayEventDetail<any>>) {
     throw new Error('Method not implemented.');
   }
 

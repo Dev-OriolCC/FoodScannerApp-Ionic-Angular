@@ -19,9 +19,11 @@ p {
     margin-left: 20px;
     margin-right: 20px;
 }
-.submitBtn { 
+
+.submitBtn {
     color: #5fc592;
 }
+
 .scanWithCameraBtn {
     --background: #5fc592;
     --color: rgb(253, 253, 253);
@@ -61,27 +63,53 @@ ion-spinner {
     color: #5fc592
 }
 
-.centered-content { 
+.centered-content {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: 100%; 
+    height: 100%;
     text-align: center;
 }
 
-.formInput { 
-    //margin-bottom: 20px;
-}
 
 .productName {
     font-weight: 600;
     font-size: 22px;
 }
 
-.productCode { 
+.productCode {
     font-size: 20px;
 }
+
 .productNutriScore {
     font-size: 20px;
 }
+
+.green-text {
+    color: #5fc592;
+}
+
+.red-text {
+    color: #ff4c4c;
+}
+
+.nutriScoreImg {
+    width: 80%;
+    height: 85%;
+}
+
+
+.stickerImg {
+    width: 85px;
+    height: auto;
+}
+
+.image-row {
+    display: flex;
+    gap: 16px;
+    /* Space between images */
+    justify-content: center;
+}
+
+.labelImg {}
