@@ -1,3 +1,9 @@
+ion-spinner {
+    height: 20%;
+    width: 20%;
+    color: #5fc592
+}
+
 ion-item {
     --inner-padding-end: 0;
     /* Removes extra padding for a tighter layout */
@@ -24,3 +30,57 @@ ion-item {
     /* Background color */
     width: auto;
 }
+
+/** Modal View Styles */
+.modal-title {
+    text-align: center;
+}
+
+.centered-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+}
+.productName {
+    font-weight: 600;
+    font-size: 22px;
+}
+
+.productCode {
+    font-size: 20px;
+}
+
+.productNutriScore {
+    font-size: 20px;
+}
+
+.green-text {
+    color: #5fc592;
+}
+
+.red-text {
+    color: #ff4c4c;
+}
+
+.nutriScoreImg {
+    width: 80%;
+    height: 85%;
+}
+
+
+.stickerImg {
+    width: 85px;
+    height: auto;
+}
+
+.image-row {
+    display: flex;
+    gap: 16px;
+    /* Space between images */
+    justify-content: center;
+}
+
+.labelImg {}

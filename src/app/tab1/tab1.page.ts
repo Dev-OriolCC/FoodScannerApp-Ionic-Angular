@@ -6,6 +6,8 @@ import { BehaviorSubject, catchError, map, Observable, of, startWith } from 'rxj
 import { State } from '../interface/state';
 import { DataState } from '../enum/dataState.enum';
 import { CustomHttpResponse, ProductState } from '../interface/appState';
+import { DatabaseService } from '../services/database.service';
+import { Product } from '../interface/product';
 
 @Component({
   selector: 'app-tab1',
@@ -32,7 +34,7 @@ export class Tab1Page {
   @ViewChild(IonModal) modal: IonModal | undefined;
 
   productImages: { condition: boolean | undefined; src: string; alt: string; }[] | undefined;
-  constructor(private scannerService: ScannerService) {}
+  constructor(private scannerService: ScannerService, private databaseService: DatabaseService) {}
   
   cancel() {
     this.name = ""
@@ -41,7 +43,6 @@ export class Tab1Page {
   
   confirm() {
     this.isLoading = true;
-    console.log('confirm')
 
     this.productState$ = this.scannerService.$product(this.name != undefined ? this.name : "").pipe(
       map(response => {
@@ -56,6 +57,9 @@ export class Tab1Page {
         
         this.isLoading = false;
         this.isModalOpen = true
+        if(response.data?.product != undefined) {
+          this.createProduct(response.data?.product)
+        }
         
         return { dataState: DataState.LOADED, appData: response};
       }),
@@ -70,6 +74,10 @@ export class Tab1Page {
     )
   }
 
+  createProduct(data : Product) {
+    this.databaseService.createDocument("Products", data.id, data)
+  }
+
   
 
   
@@ -77,13 +85,10 @@ export class Tab1Page {
     const ev = event as CustomEvent<OverlayEventDetail<string>>;
 
     if (ev.detail.role === 'showResult') {
-      
       this.message = `Hello, ${ev.detail.data}!`;
       console.log("DATA => "+ev.detail.data)
-      
     }
     if (ev.detail.role === 'confirm') {
-      
       this.message = `Hello, ${ev.detail.data}!`;
     }
   }

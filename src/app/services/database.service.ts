@@ -1,48 +1,30 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { collection, collectionData, deleteDoc, doc, Firestore, setDoc } from '@angular/fire/firestore';
+import { catchError, from, Observable, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DatabaseService {
 
-  //private sqlite:
-  //private db!: 
-  //private user:
-
+  private firestore = inject(Firestore);
+  
   constructor() { }
 
-  async initializePlugin() {
-
-    // await this.db.open();
-    const schema = `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      code TEXT UNIQUE,
-      scoreLetter TEXT,
-      timestamp TEXT,
-      isCalories BOOLEAN DEFAULT 0,
-      isSugars BOOLEAN DEFAULT 0,
-      isSaturatedFat BOOLEAN DEFAULT 0,
-      isSalt BOOLEAN DEFAULT 0,
-      isColorant BOOLEAN DEFAULT 0,
-      isCaffeine BOOLEAN DEFAULT 0
-    );`;
-
-    //await this.db.execute(schema)
-
+  getCollectionChanges<T>(path: string) {
+    const refcollection = collection(this.firestore, path);
+    console.log("Path "+path);
+    return collectionData(refcollection) as Observable<T[]>;
+  }
+  
+  createDocument(path: string, docId: string, data: any) {
+    const document = doc(this.firestore, `${path}/${docId}`);
+    return setDoc(document, data);
   }
 
-  async loadProducts() { 
-    //const products = await this.db.query(`SELECT * FROM products;`);
-    //this.products.set
+  deleteDocument(path: string, docId: string) {
+    const document = doc(this.firestore,  `${path}/${docId}`)
+    return deleteDoc(document)
   }
 
-  async deleteProduct(code: string) { 
-    //const products = await this.db.query(`SELECT * FROM products;`);
-    //this.products.set
-  }
-
-  async getProductByCode(code: string) {
-    
-  }
 }

@@ -1,5 +1,12 @@
 export interface Product {
-
+    /**
+     * @Additional_colums_for_firebase
+     */
+    id: string
+    userId: string;
+    date: string;
+    stickers: number;
+    /**@END */
     productName: string;
     code: string;
     //
@@ -12,8 +19,8 @@ export interface Product {
     isSugars: boolean;
     isSaturatedFat: boolean;
     isSalt: boolean;
-    caffeine: boolean;
-    colorant: boolean;
+    isCaffeine: boolean;
+    isColorant: boolean;
     //
     scoreLetter: string;
     status: boolean;

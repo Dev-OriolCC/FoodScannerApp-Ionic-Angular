@@ -40,9 +40,14 @@
         <ion-content class="ion-padding">
 
           <ion-item>
-            <ion-input label="Enter Barcode" labelPlacement="stacked" type="text" placeholder="102311232"
-              [(ngModel)]="name"></ion-input>
+            <ion-input label="Enter Barcode" labelPlacement="stacked" type="text" placeholder="102311232" #barcodeInput="ngModel" 
+            minlength="4" maxlength="15" [(ngModel)]="name" required></ion-input>
           </ion-item>
+          <ion-text color="danger" *ngIf="barcodeInput.invalid && barcodeInput.touched">
+            <small *ngIf="barcodeInput.errors?.['required']">Barcode is required.</small>
+            <small *ngIf="barcodeInput.errors?.['minlength']">Minimum 4 characters required.</small>
+            <small *ngIf="barcodeInput.errors?.['maxlength']">Maximum 15 characters allowed.</small>
+          </ion-text>
 
           <ion-button class="scanWithCameraBtn" id="open-toast" expand="block"><ion-icon aria-hidden="true"
               name="barcode-outline"></ion-icon> Scan with Camera</ion-button>
@@ -88,8 +93,8 @@
               <img *ngFor="let img of productImages" [src]="img.src" [alt]="img.alt" class="stickerImg" />
             </div>
             <!-- Sticker_Labels -->
-            <img *ngIf="productState.appData?.data?.product?.caffeine" src="../../assets/stickers/caffeine.png" alt="ExccesiveCaffeine" class="labelImg" />
-            <img *ngIf="productState.appData?.data?.product?.colorant" src="../../assets/stickers/colorant.png" alt="ExccesiveColorant" class="labelImg" />
+            <img *ngIf="productState.appData?.data?.product?.isCaffeine" src="../../assets/stickers/caffeine.png" alt="ExccesiveCaffeine" class="labelImg" />
+            <img *ngIf="productState.appData?.data?.product?.isColorant" src="../../assets/stickers/colorant.png" alt="ExccesiveColorant" class="labelImg" />
 
             <ion-text>
               <h2  class="productNutriScore">Exccesive Table</h2>
@@ -136,16 +141,16 @@
                 <ion-col>
                   <ion-item>
                     <ion-input label="Caffeine" class="formInput"
-                    [ngClass]="{'green-text': productState.appData?.data?.product?.caffeine === false, 'red-text': productState.appData?.data?.product?.caffeine === true}"
-                    value="{{ productState.appData?.data?.product?.caffeine === true ? 'YES' : 'NO'}}"
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.isCaffeine === false, 'red-text': productState.appData?.data?.product?.isCaffeine === true}"
+                    value="{{ productState.appData?.data?.product?.isCaffeine === true ? 'YES' : 'NO'}}"
                     [disabled]="true"></ion-input>
                   </ion-item>
                 </ion-col>
                 <ion-col>
                   <ion-item>
                     <ion-input label="Colorant" class="formInput" 
-                    [ngClass]="{'green-text': productState.appData?.data?.product?.colorant === false, 'red-text': productState.appData?.data?.product?.colorant === true}"
-                    value="{{ productState.appData?.data?.product?.colorant === true ? 'YES' : 'NO'}}"
+                    [ngClass]="{'green-text': productState.appData?.data?.product?.isColorant === false, 'red-text': productState.appData?.data?.product?.isColorant === true}"
+                    value="{{ productState.appData?.data?.product?.isColorant === true ? 'YES' : 'NO'}}"
                     [disabled]="true"></ion-input>
                   </ion-item>
                 </ion-col>
