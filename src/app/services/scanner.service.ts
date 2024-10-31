@@ -3,13 +3,14 @@ import { catchError, Observable, tap, throwError } from "rxjs";
 import { CustomHttpResponse, ProductState } from "../interface/appState";
 import { Product } from "../interface/product";
 import { Injectable } from "@angular/core";
+import { environment } from "src/environments/environment.prod";
 
 @Injectable({
     providedIn: 'root'
 })
 export class ScannerService {
 
-    private readonly server: string = "http://localhost:8080/api/v1/barcode-app"
+    private readonly server: string = environment.backendUri;
 
     constructor(private http: HttpClient) { }
 

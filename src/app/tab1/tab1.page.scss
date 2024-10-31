@@ -12,12 +12,13 @@ p {
 .scanBarcodeBtn {
     --background: #5fc592;
     --color: rgb(253, 253, 253);
-    --border-radius: 0;
     --border-width: 1px;
     --ripple-color: rgb(193, 194, 185);
     font-size: large;
     margin-left: 20px;
     margin-right: 20px;
+    border-radius: 2%;
+
 }
 
 .submitBtn {
@@ -27,7 +28,6 @@ p {
 .scanWithCameraBtn {
     --background: #5fc592;
     --color: rgb(253, 253, 253);
-    --border-radius: 0;
     --border-width: 1px;
     --ripple-color: rgb(193, 194, 185);
     text-transform: none;
@@ -35,6 +35,7 @@ p {
     margin-top: 20px;
     margin-left: 20px;
     margin-right: 20px;
+    border-radius: 2%;
 }
 
 p {

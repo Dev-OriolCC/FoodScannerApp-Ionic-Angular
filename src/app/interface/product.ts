@@ -9,6 +9,7 @@ export interface Product {
     /**@END */
     productName: string;
     code: string;
+    image: string;
     //
     calories: string;
     sugars: string;

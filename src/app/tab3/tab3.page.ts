@@ -6,7 +6,10 @@ import { Component } from '@angular/core';
   styleUrls: ['tab3.page.scss']
 })
 export class Tab3Page {
+  isLoading: boolean = true;
 
-  constructor() {}
+  constructor() {
+    setTimeout(() => this.isLoading = false, 4500)
+  }
 
 }

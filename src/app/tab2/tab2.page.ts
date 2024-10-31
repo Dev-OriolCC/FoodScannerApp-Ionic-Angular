@@ -6,6 +6,7 @@ import { ProductState } from '../interface/appState';
 import { BehaviorSubject, Observable, timeout } from 'rxjs';
 import { DataState } from '../enum/dataState.enum';
 import { State } from '../interface/state';
+import { AlertController } from '@ionic/angular';
 
 @Component({
   selector: 'app-tab2',
@@ -13,7 +14,6 @@ import { State } from '../interface/state';
   styleUrls: ['tab2.page.scss']
 })
 export class Tab2Page {
-
 
   products: Product[] = []
   productImages: { condition: boolean | undefined; src: string; alt: string; }[] | undefined;
@@ -25,9 +25,10 @@ export class Tab2Page {
 
   isModalOpen: boolean = false;
   isLoading: boolean = true;
+  skeletonItems = Array(4);
 
 
-  constructor(private databaseService: DatabaseService) {
+  constructor(private databaseService: DatabaseService, private alertController: AlertController) {
     this.loadProducts()
   }
 
@@ -41,11 +42,6 @@ export class Tab2Page {
         this.isLoading = false
       }
     })
-  }
-
-  deleteProduct(product: Product) {
-    console.log("Deleting: "+product.id)
-    this.databaseService.deleteDocument("Products", product.id)
   }
 
   viewProduct(productId: string) {
@@ -65,29 +61,33 @@ export class Tab2Page {
     this.isModalOpen = isOpen
   }
 
-
-  /** Alert delete button */
-  public alertButtons = [
-    {
-      text: 'Cancel',
-      role: 'cancel',
-      handler: () => {
-        console.log('Delete canceled');
-      },
-    },
-    {
-      text: 'OK',
-      role: 'confirm',
-      handler: () => {
-        console.log('Delete confirmed');
-      },
-    },
-  ];
-
-  setResult(event: any, product: Product) {
-    if(event.detail.role === 'confirm') {
-      this.deleteProduct(product)
-    }
+  /**
+   * Delete Logic
+   * @param product 
+   */
+  deleteProduct(product: Product) {
+    console.log("Deleting: "+product.id)
+    this.databaseService.deleteDocument("Products", product.id)
+  }
+  
+  showDeleteAlert(product: Product) {
+    console.log('Show delete alert'+product.id)
+    /** Alert delete button */
+    this.alertController.create({ 
+      header: `Are you sure you want to delete this product: ${product.productName} ?`,
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          handler: () => { console.log('Delete canceled'); },
+        },
+        {
+          text: 'OK',
+          role: 'confirm',
+          handler: () => { console.log('Delete confirmed'); },
+        },
+      ]
+    }).then(alert => alert.present());
   }
 
 }

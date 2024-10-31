@@ -17,7 +17,6 @@ import { environment } from '../environments/environment.prod';
 
 /*** 
  * @TODO_test_with_more_specific_data
- * add the profile page
  * add splash screen
  * add icon
  */
