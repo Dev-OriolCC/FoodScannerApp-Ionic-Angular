@@ -39,7 +39,8 @@
 
           <ion-item>
             <ion-thumbnail slot="start">
-              <img alt="foodapp_1" width="25" height="25" src="{{ product.image }}" />
+              <img *ngIf="product.image" alt="foodapp_1" width="25" height="25" src="{{ product.image }}" />
+              <img *ngIf="!product.image" alt="foodapp_1" width="25" height="25" src="../../assets/common/noImage.png" />
             </ion-thumbnail>
             <ion-label>
               {{ product.productName.length > 30 ? (product.productName | slice:0:30) + '...' : product.productName

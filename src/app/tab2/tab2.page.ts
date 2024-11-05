@@ -7,6 +7,7 @@ import { BehaviorSubject, Observable, timeout } from 'rxjs';
 import { DataState } from '../enum/dataState.enum';
 import { State } from '../interface/state';
 import { AlertController } from '@ionic/angular';
+import { Platform, ModalController  } from '@ionic/angular';
 
 @Component({
   selector: 'app-tab2',
@@ -28,8 +29,16 @@ export class Tab2Page {
   skeletonItems = Array(4);
 
 
-  constructor(private databaseService: DatabaseService, private alertController: AlertController) {
+  constructor(private databaseService: DatabaseService, private alertController: AlertController,
+    private platform: Platform, private modalCtrl: ModalController) {
     this.loadProducts()
+    /**@TODO_TEST_IF_BACK_BTN_BUG_IS_SOLVED */
+    this.platform.backButton.subscribeWithPriority(10, async () => {
+      const modal = await this.modalCtrl.getTop();
+      if (modal) {
+        await modal.dismiss();
+      }
+    });
   }
 
   loadProducts() {
