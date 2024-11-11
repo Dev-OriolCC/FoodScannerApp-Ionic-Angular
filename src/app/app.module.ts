@@ -17,8 +17,14 @@ import { environment } from '../environments/environment.prod';
 
 /*** 
  * @TODO_test_with_more_specific_data
- * add splash screen
- * add icon
+ * Add barcode reader GOOGLE MLKIT
+ * Integrate User Authentication
+ * Enable Profile Counter
+ * Enable AI support
+ * 
+ * npx cap open android
+ * ionic build
+ * npx cap sync
  */
 
 @NgModule({

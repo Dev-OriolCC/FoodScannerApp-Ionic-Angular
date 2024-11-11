@@ -3,7 +3,7 @@ import { DatabaseService } from '../services/database.service';
 import { Product } from '../interface/product';
 import { doc } from '@angular/fire/firestore';
 import { ProductState } from '../interface/appState';
-import { BehaviorSubject, Observable, timeout } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, timeout } from 'rxjs';
 import { DataState } from '../enum/dataState.enum';
 import { State } from '../interface/state';
 import { AlertController } from '@ionic/angular';
@@ -28,16 +28,22 @@ export class Tab2Page {
   isLoading: boolean = true;
   skeletonItems = Array(4);
 
+  private backButtonSubscription: Subscription;
+  
 
   constructor(private databaseService: DatabaseService, private alertController: AlertController,
     private platform: Platform, private modalCtrl: ModalController) {
     this.loadProducts()
     /**@TODO_TEST_IF_BACK_BTN_BUG_IS_SOLVED */
-    this.platform.backButton.subscribeWithPriority(10, async () => {
-      const modal = await this.modalCtrl.getTop();
-      if (modal) {
-        await modal.dismiss();
-      }
+    this.backButtonSubscription = this.platform.backButton.subscribeWithPriority(9999, async () => {
+      //alert('do nothing');
+      // const modal = await this.modalCtrl.getTop();
+      // if (modal) {
+      //   await modal.dismiss();
+      //   this.productSubject.next({ dataState: DataState.LOADING });
+      //   // this.closeModal(false)
+      //   // this.loadProducts();
+      // }
     });
   }
 
