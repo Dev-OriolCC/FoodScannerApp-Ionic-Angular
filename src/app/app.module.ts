@@ -22,7 +22,8 @@ import { environment } from '../environments/environment.prod';
  * Enable Profile Counter
  * Enable AI support
  * 
- * npx cap open android
+ * ionic serve
+ * visual code -> project -> open android studio -> //npx cap open android
  * ionic build
  * npx cap sync
  */

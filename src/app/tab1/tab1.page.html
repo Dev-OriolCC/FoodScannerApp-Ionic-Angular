@@ -16,7 +16,7 @@
   <ng-container>
     <div class="container">
       <ion-button class="scanBarcodeBtn" id="open-modal" expand="block">Scan Barcode</ion-button>
-      <p>Note: This app only works with products that have nutritional facts in English.</p>
+      <p>Note: Beta.This app only works with products that have nutritional facts in English.</p>
     </div>
 
     <ion-modal trigger="open-modal" (willDismiss)="onWillDismiss($event)">
@@ -49,8 +49,10 @@
             <small *ngIf="barcodeInput.errors?.['maxlength']">Maximum 15 characters allowed.</small>
           </ion-text>
 
-          <ion-button class="scanWithCameraBtn" id="open-toast" expand="block"><ion-icon aria-hidden="true"
-              name="barcode-outline"></ion-icon> Scan with Camera</ion-button>
+          <ion-button class="scanWithCameraBtn" id="open-toast" expand="block" (click)="scan()">
+            <ion-icon aria-hidden="true" name="barcode-outline"></ion-icon> Scan with Camera
+          </ion-button>
+          
           <ion-toast trigger="open-toast" message="Sorry, not availiable yet :(" [duration]="3000"
             [buttons]="toastButtons" (didDismiss)="setRoleMessage($event)"></ion-toast>
         </ion-content>

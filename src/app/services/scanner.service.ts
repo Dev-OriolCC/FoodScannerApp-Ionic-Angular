@@ -15,7 +15,7 @@ export class ScannerService {
     constructor(private http: HttpClient) { }
 
     $product = (code: string) => <Observable<CustomHttpResponse<ProductState>>>
-        this.http.post<CustomHttpResponse<Product>>(`${this.server}/test/${code}`, {})
+        this.http.post<CustomHttpResponse<Product>>(`${this.server}/${code}`, {})
             .pipe(
                 tap(console.log),
                 catchError(this.handleError)

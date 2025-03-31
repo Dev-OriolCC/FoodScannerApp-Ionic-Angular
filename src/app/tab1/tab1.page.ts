@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { IonModal } from '@ionic/angular';
 import { IonModalCustomEvent,IonToastCustomEvent,OverlayEventDetail } from '@ionic/core';
 import { ScannerService } from '../services/scanner.service';
@@ -8,13 +8,15 @@ import { DataState } from '../enum/dataState.enum';
 import { CustomHttpResponse, ProductState } from '../interface/appState';
 import { DatabaseService } from '../services/database.service';
 import { Product } from '../interface/product';
+import { Barcode, BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { AlertController } from '@ionic/angular';
 
 @Component({
   selector: 'app-tab1',
   templateUrl: 'tab1.page.html',
   styleUrls: ['tab1.page.scss']
 })
-export class Tab1Page {
+export class Tab1Page implements OnInit{
 
   /** 
   * @TODO add color binding depending on the API value                     
@@ -34,7 +36,56 @@ export class Tab1Page {
   @ViewChild(IonModal) modal: IonModal | undefined;
 
   productImages: { condition: boolean | undefined; src: string; alt: string; }[] | undefined;
-  constructor(private scannerService: ScannerService, private databaseService: DatabaseService) {}
+  isSupported = false;
+  barcodes: Barcode[] = [];
+
+  constructor(private scannerService: ScannerService, private databaseService: DatabaseService, private alertController: AlertController) {}
+
+  ngOnInit(): void {
+    BarcodeScanner.isSupported().then((result) => {
+      this.isSupported = result.supported;
+    });
+  }
+
+  /** Scan barcode */
+  async scan(): Promise<void> {
+    const granted = await this.requestPermissions();
+    if (!granted) {
+      this.presentAlert();
+      return;
+    }
+
+    try {
+      const result = await BarcodeScanner.scan();
+
+      if(result.barcodes && result.barcodes.length > 0) {
+        this.name = result.barcodes[0].displayValue || "";
+      } else {
+        console.log("No barcode found")
+      }
+
+    } catch (error) {
+      console.log("[ERROR]: "+error);
+    }
+    // const { barcodes } = await BarcodeScanner.scan();
+    // this.barcodes.push(...barcodes);
+    // this.name = this.barcodes.at(0)
+  }
+
+  async requestPermissions(): Promise<boolean> {
+    const { camera } = await BarcodeScanner.requestPermissions();
+    return camera === 'granted' || camera === 'limited';
+  }
+
+  async presentAlert(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Permission denied',
+      message: 'Please grant camera permission to use the barcode scanner.',
+      buttons: ['OK'],
+    });
+    await alert.present();
+  }
+  /** */
   
   cancel() {
     this.name = ""
