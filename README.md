@@ -12,6 +12,9 @@ This is the boilerplate that [Infinite Red](https://infinite.red) uses as a way 
 ```bash
 npm install --legacy-peer-deps
 npm run start
+npx expo run:android
+npx expo run:android --device
+npx expo start --dev-client
 ```
 
 To make things work on your local simulator, or on your phone, you need first to [run `eas build`](https://github.com/infinitered/ignite/blob/master/docs/expo/EAS.md). We have many shortcuts on `package.json` to make it easier:
