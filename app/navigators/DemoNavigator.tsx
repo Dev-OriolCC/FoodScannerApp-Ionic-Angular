@@ -9,6 +9,7 @@ import { DemoCommunityScreen } from "@/screens/DemoCommunityScreen"
 import { DemoDebugScreen } from "@/screens/DemoDebugScreen"
 import { DemoPodcastListScreen } from "@/screens/DemoPodcastListScreen"
 import { DemoShowroomScreen } from "@/screens/DemoShowroomScreen/DemoShowroomScreen"
+import { HomeScreen } from "@/screens/HomeScreen"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
@@ -43,7 +44,7 @@ export function DemoNavigator() {
           tabBarItemStyle: themed($tabBarItem),
         }}
       >
-        <Tab.Screen
+        {/* <Tab.Screen
           name="DemoShowroom"
           component={DemoShowroomScreen}
           options={{
@@ -56,7 +57,21 @@ export function DemoNavigator() {
               />
             ),
           }}
+        /> */}
+
+        {/* NEW HOME SCREEN */}
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            tabBarAccessibilityLabel: translate("demoNavigator:homeTab"),
+            tabBarLabel: translate("demoNavigator:homeTab"),
+            tabBarIcon: ({ focused }) => (
+              <Icon icon="heart" color={focused ? colors.tint : colors.tintInactive} size={30} />
+            ),
+          }}
         />
+
 
         <Tab.Screen
           name="DemoCommunity"
@@ -84,6 +99,8 @@ export function DemoNavigator() {
             ),
           }}
         />
+
+
 
         <Tab.Screen
           name="DemoDebug"

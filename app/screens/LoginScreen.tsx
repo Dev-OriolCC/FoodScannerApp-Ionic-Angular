@@ -14,7 +14,7 @@ import type { ThemedStyle } from "@/theme/types"
 
 interface LoginScreenProps extends AppStackScreenProps<"Login"> {}
 
-export const LoginScreen: FC<LoginScreenProps> = () => {
+export const LoginScreen: FC<LoginScreenProps> = ({ navigation }) => {
   const authPasswordInput = useRef<TextInput>(null)
 
   const [authPassword, setAuthPassword] = useState("")
@@ -51,6 +51,11 @@ export const LoginScreen: FC<LoginScreenProps> = () => {
 
     // We'll mock this with a fake token.
     setAuthToken(String(Date.now()))
+  }
+
+  function register() {
+    console.log("Debug")
+    navigation.navigate("Register", { screen: "Register", params: {} })
   }
 
   const PasswordRightAccessory: ComponentType<TextFieldAccessoryProps> = useMemo(
@@ -118,6 +123,15 @@ export const LoginScreen: FC<LoginScreenProps> = () => {
         preset="reversed"
         onPress={login}
       />
+      {/* Goes to Register View */}
+      <Button
+        testID="register-button"
+        tx="loginScreen:tapToRegister"
+        style={themed($tapButton)}
+        onPress={register}
+      />
+
+
     </Screen>
   )
 }
