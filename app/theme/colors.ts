@@ -31,6 +31,8 @@ const palette = {
   angry100: "#F2D6CD",
   angry500: "#C03403",
 
+  green100: "#59e4aeff",
+
   overlay20: "rgba(25, 16, 21, 0.2)",
   overlay50: "rgba(25, 16, 21, 0.5)",
 } as const
@@ -82,4 +84,8 @@ export const colors = {
    * Error Background.
    */
   errorBackground: palette.angry100,
+
+  // Custom colors
+
+  success: palette.green100
 } as const

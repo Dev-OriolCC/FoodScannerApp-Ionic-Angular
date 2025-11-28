@@ -58,6 +58,36 @@ const en = {
     tapToLogIn: "Login",
     hint: "Hint: you can use any email address and your favorite password :)",
   },
+
+  // HOME SCREEN
+  homeScreen: {
+    scanbarcodeInput: {
+      useCase: {
+          passingContent: {
+          name: "Passing Content",
+          description: "There are a few different ways to pass content.",
+          viaLabel: {
+            labelTx: "Enter barcode",
+            helper: "",
+            placeholder: "1123123",
+          },
+          rightAccessory: {
+            label: "RightAccessory",
+            helper: "This prop takes a function that returns a React element.",
+          },
+          leftAccessory: {
+            label: "LeftAccessory",
+            helper: "This prop takes a function that returns a React element.",
+          },
+          supportsMultiline: {
+            label: "Supports Multiline",
+            helper: "Enables a taller input for multiline text.",
+          }
+        }
+      }
+    }
+  },
+
   demoNavigator: {
     componentsTab: "Components",
     homeTab: "Home",
