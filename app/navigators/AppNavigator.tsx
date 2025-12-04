@@ -18,6 +18,7 @@ import { useAppTheme } from "@/theme/context"
 import { DemoNavigator } from "./DemoNavigator"
 import type { AppStackParamList, NavigationProps } from "./navigationTypes"
 import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
+import { FoodScreen } from "@/screens/FoodScreen"
 
 /**
  * This is a list of all the route names that will exit the app if the back button
@@ -61,7 +62,7 @@ const AppStack = () => {
 
       {/** 🔥 Your screens go here */}
       {/* IGNITE_GENERATOR_ANCHOR_APP_STACK_SCREENS */}
-      
+      <Stack.Screen name="Food" component={FoodScreen} />
     </Stack.Navigator>
   )
 }

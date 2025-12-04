@@ -1,23 +1,19 @@
 import { AppStackScreenProps, DemoTabScreenProps } from "@/navigators/navigationTypes";
 import { FC, useEffect, useState } from "react";
 import { Modal, View, ViewStyle, StyleSheet, TextStyle } from "react-native";
-
 import { useAppTheme } from "@/theme/context";
 import { $styles } from "@/theme/styles";
 import { Screen } from "@/components/Screen"
 import { Button } from "@/components/Button"
 import type { ThemedStyle } from "@/theme/types"
 import { Text } from "@/components/Text"
-import { typography } from "@/theme/typography";
 import { TextField } from "@/components/TextField";
-
-
-
 
 
 export const HomeScreen: FC<DemoTabScreenProps<"Home">> = (_props) => {
     const { themed, theme } = useAppTheme()
     const [modalOpen, setModalOpen] = useState(false);
+    const { navigation } = _props;
 
     useEffect(() => {
         console.log("Home Screen");
@@ -26,7 +22,12 @@ export const HomeScreen: FC<DemoTabScreenProps<"Home">> = (_props) => {
     function scanbarcode() {
         setModalOpen(!modalOpen)
         console.log("scanbarcode..." + modalOpen)
+    }
 
+    function submitBarcode() {
+
+        //TODO: Add Loading Effect!
+        navigation.navigate("Food")
     }
 
     return (
@@ -43,8 +44,8 @@ export const HomeScreen: FC<DemoTabScreenProps<"Home">> = (_props) => {
                 visible={modalOpen}
                 onRequestClose={() => setModalOpen(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                <View style={themed($customModelOverlay)}>
+                    <View style={themed($customModalContent)}>
                         <Text preset="heading" style={styles.modalTitle}>Scan Barcode</Text>
 
                         <TextField
@@ -56,16 +57,18 @@ export const HomeScreen: FC<DemoTabScreenProps<"Home">> = (_props) => {
                         />
                         <Button text={`Scan with Camera`} />
 
-                        <Button
-                            text="Close"
-                            onPress={() => setModalOpen(false)}
-                            style={styles.closeButton}
-                        />
-                        <Button
-                            text="Submit"
-                            onPress={() => setModalOpen(false)}
-                            style={styles.closeButton}
-                        />
+                        <View style={themed($customButtonsViewStyle)}>
+                            <Button
+                                text="Close"
+                                onPress={() => setModalOpen(false)}
+                                style={styles.closeButton}
+                            />
+                            <Button
+                                text="Submit"
+                                onPress={() => submitBarcode()}
+                                style={styles.submitButton}
+                            />
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -80,7 +83,7 @@ const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
     paddingBottom: spacing.xxl,
 })
 
-const $customContainerTextFieldStyle: ThemedStyle<ViewStyle> = ({  }) => ({
+const $customContainerTextFieldStyle: ThemedStyle<ViewStyle> = ({ }) => ({
     width: "85%",
     marginBottom: 15
 })
@@ -97,34 +100,45 @@ const $customButtonStyle: ThemedStyle<ViewStyle> = ({ colors, typography }) => (
     fontSize: 10
 })
 
+const $customButtonsViewStyle: ThemedStyle<ViewStyle> = ({ colors }) => ({
+    marginTop: 10,
+    flexDirection: 'row',
+    alignSelf: 'flex-end',
+    paddingHorizontal: '5%',
+    gap: 10
+})
+
+const $customModelOverlay: ThemedStyle<ViewStyle> = () => ({
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+})
+
+const $customModalContent: ThemedStyle<ViewStyle> = () => ({
+    width: '95%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+        width: 0,
+        height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+})
+
 const styles = StyleSheet.create({
-    modalOverlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        width: '95%',
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 24,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
-    },
     modalTitle: {
         marginBottom: 15,
     },
     closeButton: {
-        
-        marginTop: 10,
-        minWidth: 100,
+        minWidth: 25,
     },
+    submitButton: {
+        backgroundColor: 'rgba(65, 228, 160, 1)'
+    }
 });
