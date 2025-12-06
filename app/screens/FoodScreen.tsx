@@ -15,19 +15,37 @@ import { useSafeAreaInsetsStyle } from "@/utils/useSafeAreaInsetsStyle"
 import { HomeScreen } from './HomeScreen';
 import { Icon } from "@/components/Icon"
 
+// images
+const nutriScoreA = require("@assets/images/stickers/nutriScoreA.jpg")
+
+const calories = require("@assets/images/stickers/calories.png")
+const salt = require("@assets/images/stickers/salt.png")
+const sugars = require("@assets/images/stickers/sugars.png")
+const saturated = require("@assets/images/stickers/saturated.png")
+
+const caffeine = require("@assets/images/stickers/caffeine.png")
+const colorant = require("@assets/images/stickers/colorant.png")
+const legends = require("@assets/images/stickers/leyenda.png")
+
 interface FoodScreenProps extends AppStackScreenProps<"Food"> {}
 
 export const FoodScreen: FC<FoodScreenProps> = function FoodScreen(_props) {
     const { themed, theme } = useAppTheme()
 
     const { navigation } = _props;
+
+    function goBack() {
+        console.log("yaayy")
+    }
     
     return (
         <Screen preset="scroll" safeAreaEdges={["top"]}>
             <View style={themed($container)}>
                 {/* Close button and Title */}
                 <View style={themed($header)}>
-                    <Icon icon={"back"} color={theme.colors.text} size={35} />
+                    <Button onPress={goBack}>
+                        <Icon icon={"back"} color={theme.colors.text} size={35} />
+                    </Button>
                 </View>
 
                 {/* Product Title */}
@@ -43,51 +61,51 @@ export const FoodScreen: FC<FoodScreenProps> = function FoodScreen(_props) {
                     Nutri-Score
                 </Text>
                 <Image 
-                    source={require('')} 
-                    style={styles.nutriScoreImage}
+                    source={nutriScoreA} 
+                    style={themed($nutriScoreImage)}
                     resizeMode="contain"
                 />
 
                 {/* Four Warning Icons Row */}
-                <View style={styles.warningRow}>
+                <View style={themed($warningRow)}>
                     <Image 
-                        source={require('')} 
-                        style={styles.warningIcon}
+                        source={calories} 
+                        style={themed($warningIcon)}
                         resizeMode="contain"
                     />
                     <Image 
-                        source={require('')} 
-                        style={styles.warningIcon}
+                        source={salt} 
+                        style={themed($warningIcon)}
                         resizeMode="contain"
                     />
                     <Image 
-                        source={require('')} 
-                        style={styles.warningIcon}
+                        source={sugars} 
+                        style={themed($warningIcon)}
                         resizeMode="contain"
                     />
                     <Image 
-                        source={require('')} 
-                        style={styles.warningIcon}
+                        source={saturated} 
+                        style={themed($warningIcon)}
                         resizeMode="contain"
                     />
                 </View>
 
                 {/* Caffeine Warning */}
                 <Image 
-                    source={require('')} 
-                    style={styles.fullWidthWarning}
+                    source={caffeine} 
+                    style={themed($fullWidthWarning)}
                     resizeMode="contain"
                 />
 
                 {/* Sweeteners Warning */}
                 <Image 
-                    source={require('')} 
-                    style={styles.fullWidthWarning}
+                    source={legends} 
+                    style={themed($fullWidthWarning)}
                     resizeMode="contain"
                 />
 
                 {/* Excessive Table */}
-                <Text preset="subheading" style={styles.sectionTitle}>
+                <Text preset="subheading" style={themed($sectionTitle)}>
                     Excessive Table
                 </Text>
                 <View style={styles.table}>
@@ -160,34 +178,39 @@ const $sectionTitle: ThemedStyle<ViewStyle> = () => ({
     fontSize: 20,
 })
 
+const $nutriScoreImage: ThemedStyle<ImageStyle> = () => ({
+    width: '70%',
+    height: 120,
+    alignSelf: 'center',
+    marginBottom: 20,
+})
+
+const $warningRow: ThemedStyle<ViewStyle> = () => ({
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+})
+
+const $warningIcon: ThemedStyle<ImageStyle> = () => ({
+    width: 70,
+    height: 70,
+})
+
+const $fullWidthWarning: ThemedStyle<ImageStyle> = () => ({
+    width: '95%',
+    height: 60,
+    alignSelf: 'center',
+    marginBottom: 15,
+})
+
 const styles = StyleSheet.create({
     closeButton: {
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
     },
-    nutriScoreImage: {
-        width: '70%',
-        height: 120,
-        alignSelf: 'center',
-        marginBottom: 20,
-    },
-    warningRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginBottom: 20,
-        paddingHorizontal: 10,
-    },
-    warningIcon: {
-        width: 70,
-        height: 70,
-    },
-    fullWidthWarning: {
-        width: '95%',
-        height: 60,
-        alignSelf: 'center',
-        marginBottom: 15,
-    },
+
     table: {
         marginTop: 10,
         marginBottom: 30,
@@ -199,7 +222,7 @@ const styles = StyleSheet.create({
     },
     tableCell: {
         flex: 1,
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#fafafaff',
         padding: 15,
         marginHorizontal: 5,
         borderRadius: 8,
@@ -207,7 +230,7 @@ const styles = StyleSheet.create({
         borderColor: '#333',
     },
     cellLabel: {
-        color: '#ff6b6b',
+        color: '#000000ff',
         fontSize: 14,
         marginBottom: 5,
     },
