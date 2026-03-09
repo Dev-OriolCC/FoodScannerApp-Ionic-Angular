@@ -6,5 +6,8 @@ export enum Colors {
     wheat = "#D9E7CB",
     white = "#FEFEFE",
     tabBarBg = "#D4EDBA",
-    scanBlue = "#D6EAF8"
+    scanBlue = "#D6EAF8",
+    historyBg = "#EDF6E5",
+    cardBg = "#E8F0DC",
+    cardBorder = "#C8DDB3",
 }

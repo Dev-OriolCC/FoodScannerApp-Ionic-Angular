@@ -10,36 +10,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { TabParamList } from "../navigation/types";
 import { Colors } from "../constants/colors";
-import { Ionicons } from "@expo/vector-icons";
+import { TopBar } from '../components/TopBar';
 
-type Props = BottomTabScreenProps<TabParamList, keyof TabParamList>;
+type Props = BottomTabScreenProps<TabParamList, "Home">;
+
 
 export function HomeScreen({ navigation }: Props) {
     return (
         <SafeAreaView style={styles.safe}>
             <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
-            {/* ── Top bar ── */}
-            <View style={styles.topBar}>
-                <Ionicons
-                    name="person-circle-outline"
-                    size={30}
-                    color={Colors.black}
-                />
-                <View style={styles.topBarRight}>
-                    <Ionicons
-                        name="notifications-outline"
-                        size={24}
-                        color={Colors.black}
-                    />
-                    <Ionicons
-                        name="settings-outline"
-                        size={24}
-                        color={Colors.black}
-                        style={{ marginLeft: 16 }}
-                    />
-                </View>
-            </View>
+            <TopBar />
 
             <View style={styles.content}>
 
@@ -47,7 +28,7 @@ export function HomeScreen({ navigation }: Props) {
                     <Text style={styles.scanText}>Start Scanning</Text>
                 </View>
 
-                <TouchableOpacity style={styles.scanButton} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.scanButton} activeOpacity={0.8} onPress={ () => navigation.navigate("FormBarcodeScreen") } >
                     <Text style={styles.scanButtonText}>Scan Barcode</Text>
                 </TouchableOpacity>
             </View>
@@ -61,20 +42,6 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.white,
     },
 
-    /* ── Top bar ── */
-    topBar: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    topBarRight: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-
-    /* ── Content ── */
     content: {
         flex: 1,
         alignItems: "center",

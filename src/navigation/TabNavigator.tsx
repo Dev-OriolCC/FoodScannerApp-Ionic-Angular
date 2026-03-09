@@ -4,6 +4,7 @@ import { HomeScreen } from "../screens/HomeScreen";
 import type { TabParamList } from "./types";
 import { Colors } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { HistoryScreen } from "../screens/HistoryScreen";
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -45,7 +46,7 @@ export function TabNavigator() {
             />
             <Tab.Screen
                 name="History"
-                component={HomeScreen}
+                component={HistoryScreen}
                 options={{
                     tabBarLabel: "Label",
                     tabBarIcon: ({ color, size }) => (
