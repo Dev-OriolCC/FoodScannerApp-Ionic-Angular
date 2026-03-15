@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { TabNavigator } from './TabNavigator'
 import type { RootStackParamList } from './types'
 import { FormBarcodeScreen } from '../screens/FormBarcodeScreen'
+import { ResultScreen } from '../screens/ResultScreen'
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
@@ -19,13 +20,18 @@ export function AppNavigator() {
             {/* Modal/Detail screens outside tabs */}
             <Stack.Screen
                 name="FormBarcodeScreen"
-                component={ FormBarcodeScreen }
-                options={{ 
+                component={FormBarcodeScreen}
+                options={{
                     presentation: "modal",
-                    title: "Enter Information" 
+                    title: "Enter Information"
                 }}
             />
-            
+            <Stack.Screen
+                name="ResultScreen"
+                component={ResultScreen}
+                options={{ headerShown: false }}
+            />
+
         </Stack.Navigator>
     )
 }

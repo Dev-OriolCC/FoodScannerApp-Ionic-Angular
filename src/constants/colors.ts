@@ -1,5 +1,6 @@
 export enum Colors {
     greenDark = "#3B6325",
+    greenDarkLight = "#3b632593",
     black = "#062000",
     blackLight = "#49454F",
     greenLight = "#c0efa4",

@@ -18,7 +18,7 @@ export function FormBarcodeScreen() {
     return (
         <SafeAreaView style={styles.safe}>
             <View style={styles.content}>
-                
+
 
                 <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>Enter Barcode</Text>
@@ -46,7 +46,18 @@ export function FormBarcodeScreen() {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.scanButton} activeOpacity={0.8}  >
+            <TouchableOpacity
+                style={[
+                    styles.scanButton,
+                    { backgroundColor: barcode ? Colors.greenDark : Colors.greenDarkLight }
+                ]}
+                activeOpacity={0.8}
+                onPress={() => {
+                    if (barcode) {
+                        navigation.navigate("ResultScreen");
+                    }
+                }}
+            >
                 <Text style={styles.scanButtonText}>Submit</Text>
             </TouchableOpacity>
 
@@ -62,7 +73,7 @@ const styles = StyleSheet.create({
     },
 
     content: {
-        flex: 1,
+        // flex: 1
         backgroundColor: Colors.historyBg,
         borderTopLeftRadius: 50,
         borderTopRightRadius: 50,
@@ -70,9 +81,10 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 50,
         marginLeft: 7,
         marginRight: 7,
-        height: 100,
         paddingTop: 40,
+        paddingBottom: 40,
         paddingHorizontal: 28,
+        marginBottom: 20,
     },
 
     inputContainer: {
@@ -111,8 +123,7 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         paddingVertical: 14,
         paddingHorizontal: 24,
-        
-        alignSelf: "flex-start",
+
         gap: 10,
     },
     cameraButtonText: {
@@ -120,14 +131,14 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: Colors.black,
     },
-
     scanButton: {
-        backgroundColor: Colors.greenDark,
+        color: Colors.greenDark,
         paddingVertical: 18,
         paddingHorizontal: 48,
         borderRadius: 30,
-        width: "100%",
+        marginHorizontal: 6,
         alignItems: "center",
+        width: "97%",
     },
     scanButtonText: {
         color: Colors.white,
