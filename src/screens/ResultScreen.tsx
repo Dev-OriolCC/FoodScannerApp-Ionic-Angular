@@ -14,11 +14,7 @@ export function ResultScreen() {
 
     return (
         <SafeAreaView style={styles.safe}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton} activeOpacity={0.7}>
-                    <Ionicons name="close-circle-outline" size={36} color={Colors.black} />
-                </TouchableOpacity>
-            </View>
+            
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.mainCard}>
@@ -45,10 +41,10 @@ export function ResultScreen() {
                     </View>
 
                     <View style={styles.tagsContainer}>
-                        <View style={[styles.tag, { borderColor: '#B3261E' }]}>
+                        <View style={[styles.tag, { borderColor: Colors.danger }]}>
                             <Text style={styles.tagText}>Contains Caffeine</Text>
                         </View>
-                        <View style={[styles.tag, { borderColor: '#B3261E' }]}>
+                        <View style={[styles.tag, { borderColor: Colors.danger }]}>
                             <Text style={styles.tagText}>Contains Colorants</Text>
                         </View>
                     </View>
@@ -97,13 +93,13 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     title: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: 'bold',
         color: Colors.black,
         marginBottom: 8,
     },
     barcodeText: {
-        fontSize: 14,
+        fontSize: 20,
         fontWeight: 'bold',
         color: Colors.black,
         marginBottom: 24,
@@ -152,7 +148,7 @@ const styles = StyleSheet.create({
     tagText: {
         fontSize: 16,
         fontWeight: '600',
-        color: Colors.black,
+        color: Colors.danger,
     },
     returnButton: {
         backgroundColor: Colors.greenDark,
@@ -163,7 +159,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 4,
     },
     returnButtonText: {
-        color: Colors.wheat,
+        color: Colors.white,
         fontSize: 20,
         fontWeight: 'bold',
     },

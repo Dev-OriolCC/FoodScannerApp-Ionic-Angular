@@ -14,7 +14,7 @@ export function TabNavigator() {
             screenOptions={{
                 headerShown: false,
                 tabBarActiveTintColor: Colors.black,
-                tabBarInactiveTintColor: Colors.blackLight,
+                tabBarInactiveTintColor: Colors.blackTab,
                 tabBarStyle: {
                     backgroundColor: Colors.tabBarBg,
                     borderTopLeftRadius: 24,
@@ -38,9 +38,9 @@ export function TabNavigator() {
                 name="Home"
                 component={HomeScreen}
                 options={{
-                    tabBarLabel: "Label",
+                    tabBarLabel: "Home",
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="star" size={size} color={color} />
+                        <Ionicons name="home-outline" size={size} color={color} />
                     ),
                 }}
             />
@@ -48,9 +48,9 @@ export function TabNavigator() {
                 name="History"
                 component={HistoryScreen}
                 options={{
-                    tabBarLabel: "Label",
+                    tabBarLabel: "History",
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="star" size={size} color={color} />
+                        <Ionicons name="time-outline" size={size} color={color} />
                     ),
                 }}
             />
@@ -58,9 +58,9 @@ export function TabNavigator() {
                 name="Profile"
                 component={HomeScreen}
                 options={{
-                    tabBarLabel: "Label",
+                    tabBarLabel: "Profile",
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="star" size={size} color={color} />
+                        <Ionicons name="person-circle-outline" size={size} color={color} />
                     ),
                 }}
             />
