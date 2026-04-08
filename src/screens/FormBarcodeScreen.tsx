@@ -20,8 +20,8 @@ export async function FormBarcodeScreen() {
 
     //TODO SIGNUP
     const {data, error} = await supabase.auth.signUp({
-        email: "",
-        password: ""
+        email: "signup-test@gmail.com",
+        password: "password_test_1"
     });
 
     return (
