@@ -6,6 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Colors } from '../constants/colors';
+//TODO: TESTING_SIGNUP
+
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
