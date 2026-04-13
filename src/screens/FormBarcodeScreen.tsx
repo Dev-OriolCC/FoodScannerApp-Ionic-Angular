@@ -12,17 +12,18 @@ import { supabase } from "../lib/supabase";
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>
 
-export async function FormBarcodeScreen() {
+export function FormBarcodeScreen() {
     const navigation = useNavigation<Navigation>();
     const [barcode, setBarcode] = useState("");
 
     const handleClear = () => setBarcode("");
 
     //TODO SIGNUP
-    const {data, error} = await supabase.auth.signUp({
-        email: "signup-test@gmail.com",
-        password: "password_test_1"
-    });
+    // async
+    // const {data, error} = await supabase.auth.signUp({
+    //     email: "signup-test@gmail.com",
+    //     password: "password_test_1"
+    // });
 
     return (
         <SafeAreaView style={styles.safe}>

@@ -3,6 +3,7 @@ export type RootStackParamList = {
     Food: { barcode: string; productName: string }
     ResultScreen: undefined
     FormBarcodeScreen: undefined
+    LoginScreen: undefined
 }
 
 export type TabParamList = {
