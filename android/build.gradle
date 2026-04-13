@@ -18,6 +18,10 @@ allprojects {
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
   }
+  maven {
+    url = uri(project(":react-native-async-storage_async-storage").file("local_repo"))
+            // or uri("path/to/node_modules/@react-native-async-storage/async-storage/android/local_repo")
+  }
 }
 
 apply plugin: "expo-root-project"
