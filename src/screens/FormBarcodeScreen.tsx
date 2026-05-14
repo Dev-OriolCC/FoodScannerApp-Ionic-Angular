@@ -7,9 +7,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 
-//TODO: TEST USER-SIGNUP
-import { supabase } from "../lib/supabase";
-
 type Navigation = NativeStackNavigationProp<RootStackParamList>
 
 export function FormBarcodeScreen() {
@@ -17,13 +14,6 @@ export function FormBarcodeScreen() {
     const [barcode, setBarcode] = useState("");
 
     const handleClear = () => setBarcode("");
-
-    //TODO SIGNUP
-    // async
-    // const {data, error} = await supabase.auth.signUp({
-    //     email: "signup-test@gmail.com",
-    //     password: "password_test_1"
-    // });
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -64,7 +54,6 @@ export function FormBarcodeScreen() {
                 activeOpacity={0.8}
                 onPress={() => {
                     if (barcode) {
-                        console.log(data, error);
                         navigation.navigate("ResultScreen");
                     }
                 }}
