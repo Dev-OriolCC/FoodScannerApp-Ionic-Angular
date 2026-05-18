@@ -1,7 +1,13 @@
+export type Product = {
+    barcode: string
+    calories?: number
+    [key: string]: unknown
+}
+
 export type RootStackParamList = {
     MainTabs: undefined
     Food: { barcode: string; productName: string }
-    ResultScreen: undefined
+    ResultScreen: { product: Product }
     FormBarcodeScreen: undefined
     LoginScreen: undefined
 }

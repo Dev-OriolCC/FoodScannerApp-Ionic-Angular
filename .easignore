@@ -1,0 +1,14 @@
+.git/
+.expo/
+node_modules/
+dist/
+web-build/
+
+android/.gradle/
+android/build/
+android/app/build/
+
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.tsbuildinfo
