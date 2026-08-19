@@ -4,18 +4,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
-import { Colors } from '../constants/colors';
+import { RootStackParamList } from '../../navigation/types';
+import { Colors } from '../../constants/colors';
+import { useLocalSearchParams, useGlobalSearchParams, Link, useRouter } from 'expo-router';
 //TODO: TESTING_SIGNUP
 
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ResultRouteProp = RouteProp<RootStackParamList, "ResultScreen">;
 
-export function ResultScreen() {
+export default function ResultScreen() {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<ResultRouteProp>();
-    const { product } = route.params;
+    const router = useRouter();
+    const { product } = useGlobalSearchParams();
+    const parsedProduct = typeof product === 'string' ? JSON.parse(product) : product;
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -24,7 +27,7 @@ export function ResultScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.mainCard}>
                     <Text style={styles.title}>Ocean Spray 500ml</Text>
-                    <Text style={styles.barcodeText}>[ {product.barcode} ]</Text>
+                    <Text style={styles.barcodeText}>[ {parsedProduct?.barcode} ]</Text>
 
                     <View style={styles.statsGrid}>
                         <View style={[styles.statBox, { borderColor: Colors.greenDark }]}>
@@ -58,7 +61,7 @@ export function ResultScreen() {
                 <TouchableOpacity
                     style={styles.returnButton}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate("MainTabs")}
+                    onPress={() => router.push("/(tabs)/home")}
                 >
                     <Text style={styles.returnButtonText}>Return Home</Text>
                 </TouchableOpacity>

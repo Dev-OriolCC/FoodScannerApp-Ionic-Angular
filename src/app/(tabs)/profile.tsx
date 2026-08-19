@@ -12,9 +12,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../constants/colors";
-import { useAuth } from "../provider/AuthProvider";
-import { supabase } from "../lib/supabase";
+import { Colors } from "../../constants/colors";
+import { useAuth } from "../../provider/AuthProvider";
+import { supabase } from "../../lib/supabase";
 
 const PROFILE_LOAD_DELAY = 900;
 const INSIGHTS_REFRESH_DELAY = 900;
@@ -28,7 +28,7 @@ const STATS = [
 const AI_SUMMARY =
     "After a weekend of small treats like chocolate it's a great idea to drink a lot of water. Recommend to have some protein etc etc... lorem ipsum dolor";
 
-export function ProfileScreen() {
+export default function ProfileScreen() {
     const { session } = useAuth();
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
