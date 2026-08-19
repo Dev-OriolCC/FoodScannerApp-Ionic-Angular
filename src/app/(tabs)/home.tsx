@@ -9,14 +9,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../navigation/types";
-import { Colors } from "../constants/colors";
-import { TopBar } from '../components/TopBar';
+import { RootStackParamList } from '../../navigation/types';
+import { Colors } from "../../constants/colors";
+import { TopBar } from '../../components/TopBar';
+
+import { useRouter } from "expo-router";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-export function HomeScreen() {
+export default function HomeScreen() {
     const navigation = useNavigation<NavigationProp>();
+    const router = useRouter();
     return (
         <SafeAreaView style={styles.safe}>
             <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -29,7 +32,8 @@ export function HomeScreen() {
                     <Text style={styles.scanText}>Start Scanning</Text>
                 </View>
 
-                <TouchableOpacity style={styles.scanButton} activeOpacity={0.8} onPress={() => navigation.navigate("FormBarcodeScreen")} >
+                <TouchableOpacity style={styles.scanButton} activeOpacity={0.8} 
+                onPress={() => router.push("/FormBarcodeScreen")} >
                     <Text style={styles.scanButtonText}>Scan Barcode</Text>
                 </TouchableOpacity>
             </View>

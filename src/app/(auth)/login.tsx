@@ -15,10 +15,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
+import { useRouter } from "expo-router";
 
 type AuthMode = "login" | "register" | "forgotPassword";
 
-export function LoginScreen() {
+export default function LoginScreen() {
+    const router = useRouter();
     const [mode, setMode] = useState<AuthMode>("login");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -132,6 +134,8 @@ export function LoginScreen() {
             if (error) {
                 throw error;
             }
+            console.log(error);
+            router.replace("/(tabs)/home");
         } catch (error) {
             const authError = error instanceof Error ? error.message : "Something went wrong. Try again.";
             setErrorMessage(authError);

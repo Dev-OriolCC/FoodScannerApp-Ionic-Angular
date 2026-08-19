@@ -2,8 +2,8 @@ import React, { useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Product, RootStackParamList, TabParamList } from "../navigation/types";
-import { Colors } from "../constants/colors";
+import { Product, RootStackParamList, TabParamList } from "../../navigation/types";
+import { Colors } from "../../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import {
     Modal,
@@ -15,7 +15,8 @@ import {
     FlatList,
     TouchableOpacity,
 } from "react-native";
-import { TopBar } from "../components/TopBar";
+import { TopBar } from "../../components/TopBar";
+import { useRouter } from "expo-router";
 
 type Props = BottomTabScreenProps<TabParamList, keyof TabParamList>;
 type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
@@ -75,7 +76,8 @@ const FILTER_LABELS: Record<HistoryFilter, string> = {
 
 const FILTER_OPTIONS: HistoryFilter[] = ["az", "za", "dateDesc", "dateAsc", "favorites"];
 
-export function HistoryScreen({ navigation }: Props) {
+export default function HistoryScreen() {
+    const router = useRouter();
     const [products, setProducts] = useState(PRODUCTS);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<HistoryFilter>("dateDesc");
@@ -164,7 +166,7 @@ export function HistoryScreen({ navigation }: Props) {
             barcode: product.barcode,
         };
 
-        navigation.getParent<RootNavigation>()?.navigate("ResultScreen", { product: routeProduct });
+        router.push({ pathname: `/result/${routeProduct.barcode}`, params: { product: JSON.stringify(routeProduct) } });
     }
 
     const renderItem = ({ item }: { item: HistoryProduct }) => (

@@ -5,11 +5,11 @@ export type Product = {
 }
 
 export type RootStackParamList = {
-    MainTabs: undefined
-    Food: { barcode: string; productName: string }
-    ResultScreen: { product: Product }
-    FormBarcodeScreen: undefined
-    LoginScreen: undefined
+    // MainTabs: undefined
+    // Food: { barcode: string; productName: string }
+    // ResultScreen: { product: Product }
+    // FormBarcodeScreen: undefined
+    // LoginScreen: undefined
 }
 
 export type TabParamList = {

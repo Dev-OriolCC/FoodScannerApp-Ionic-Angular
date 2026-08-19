@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { useRouter } from "expo-router";
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>
 
@@ -27,8 +28,10 @@ async function fetchProductByBarcode(barcode: string): Promise<Product> {
     };
 }
 
-export function FormBarcodeScreen() {
+export default function FormBarcodeScreen() {
     const navigation = useNavigation<Navigation>();
+    const router = useRouter();
+    
     const scanLockRef = useRef(false);
     const isMountedRef = useRef(true);
     const spinnerValue = useRef(new Animated.Value(0)).current;
@@ -130,7 +133,7 @@ export function FormBarcodeScreen() {
             }
 
             setIsLoadingProduct(false);
-            navigation.navigate("ResultScreen", { product });
+            router.push({ pathname: `/result/${product.barcode}`, params: { product: JSON.stringify(product) } });
         } catch {
             if (!isMountedRef.current) {
                 return;
