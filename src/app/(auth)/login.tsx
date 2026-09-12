@@ -13,7 +13,6 @@ import {
     View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
 import { useRouter } from "expo-router";
 
@@ -44,101 +43,15 @@ export default function LoginScreen() {
         resetFeedback();
     };
 
-    const validateEmail = () => {
-        const trimmedEmail = email.trim();
-
-        if (!trimmedEmail) {
-            setErrorMessage("Enter your email address.");
-            return null;
-        }
-
-        if (!trimmedEmail.includes("@")) {
-            setErrorMessage("Enter a valid email address.");
-            return null;
-        }
-
-        return trimmedEmail;
-    };
-
-    const validatePassword = () => {
-        if (!password) {
-            setErrorMessage("Enter your password.");
-            return false;
-        }
-
-        if (password.length < 6) {
-            setErrorMessage("Password must be at least 6 characters.");
-            return false;
-        }
-
-        if (isRegister && password !== confirmPassword) {
-            setErrorMessage("Passwords do not match.");
-            return false;
-        }
-
-        return true;
-    };
-
     const handleSubmit = async () => {
         resetFeedback();
-        const trimmedEmail = validateEmail();
-
-        if (!trimmedEmail) {
-            return;
-        }
-
-        if (!isForgotPassword && !validatePassword()) {
-            return;
-        }
-
         setLoading(true);
 
         try {
-            if (isForgotPassword) {
-                const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
-
-                if (error) {
-                    throw error;
-                }
-
-                setMessage("Password reset email sent. Check your inbox for the next step.");
-                return;
-            }
-
-            if (isRegister) {
-                const { data, error } = await supabase.auth.signUp({
-                    email: trimmedEmail,
-                    password,
-                });
-
-                if (error) {
-                    throw error;
-                }
-
-                if (!data.session) {
-                    setMode("login");
-                    setEmail(trimmedEmail);
-                    setPassword("");
-                    setConfirmPassword("");
-                    setMessage("Account created. Check your email to confirm before logging in.");
-                }
-
-                return;
-            }
-
-            const { error } = await supabase.auth.signInWithPassword({
-                email: trimmedEmail,
-                password,
-            });
-
-            if (error) {
-                throw error;
-            }
-            console.log(error);
+            // Authentication is temporarily disabled; let users explore the app.
             router.replace("/(tabs)/home");
         } catch (error) {
-            const authError = error instanceof Error ? error.message : "Something went wrong. Try again.";
-            setErrorMessage(authError);
+            setErrorMessage(error instanceof Error ? error.message : "Unable to open the app. Try again.");
         } finally {
             setLoading(false);
         }

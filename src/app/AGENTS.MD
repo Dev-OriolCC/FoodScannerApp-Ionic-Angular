@@ -70,6 +70,26 @@ This project should feel like a real app, but remain approachable.
 
 ---
 
+## Existing Codebase Rules
+
+Before adding anything:
+Look for an existing pattern (a similar screen, hook, or service) and follow it rather than introducing a new convention.
+Don't restructure folders, rename files, or change state-management patterns as a side effect of an unrelated feature request.
+If you touch a shared file (e.g. AuthContext, useAuth, Supabase client setup), call that out explicitly rather than folding it silently into a feature PR.
+Prefer small, reviewable diffs over large rewrites.
+
+---
+
+## Project Structure
+src/app/                  # Expo Router screens
+src/components/           # Shared UI components
+src/provider/                # Custom hooks (useAuth, useScan, etc.)
+src/services/             # API clients (openFoodFacts.ts, supabase.ts)
+src/constants/            # NOM-051 thresholds, colors, config
+src/store/                # Zustand stores
+
+---
+
 ## Decision Making & Clarifications
 
 If something is unclear or could be improved:

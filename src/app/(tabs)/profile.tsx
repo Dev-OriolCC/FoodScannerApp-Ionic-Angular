@@ -1,20 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Modal,
-    Pressable,
     RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
-import { useAuth } from "../../provider/AuthProvider";
-import { supabase } from "../../lib/supabase";
 
 const PROFILE_LOAD_DELAY = 900;
 const INSIGHTS_REFRESH_DELAY = 900;
@@ -29,12 +24,8 @@ const AI_SUMMARY =
     "After a weekend of small treats like chocolate it's a great idea to drink a lot of water. Recommend to have some protein etc etc... lorem ipsum dolor";
 
 export default function ProfileScreen() {
-    const { session } = useAuth();
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
-    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-    const [isSigningOut, setIsSigningOut] = useState(false);
-    const [logoutError, setLogoutError] = useState("");
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -43,22 +34,6 @@ export default function ProfileScreen() {
 
         return () => clearTimeout(timer);
     }, []);
-
-    const username = useMemo(() => {
-        const email = session?.user.email;
-
-        if (!email) {
-            return "Username";
-        }
-
-        const [prefix] = email.split("@");
-        return prefix || "Username";
-    }, [session?.user.email]);
-
-    const openLogoutModal = () => {
-        setLogoutError("");
-        setIsLogoutModalVisible(true);
-    };
 
     const handleRefreshInsights = () => {
         if (isRefreshingInsights) {
@@ -70,28 +45,6 @@ export default function ProfileScreen() {
         setTimeout(() => {
             setIsRefreshingInsights(false);
         }, INSIGHTS_REFRESH_DELAY);
-    };
-
-    const closeLogoutModal = () => {
-        if (!isSigningOut) {
-            setIsLogoutModalVisible(false);
-        }
-    };
-
-    const handleLogout = async () => {
-        setLogoutError("");
-        setIsSigningOut(true);
-
-        const { error } = await supabase.auth.signOut();
-
-        if (error) {
-            setLogoutError(error.message);
-            setIsSigningOut(false);
-            return;
-        }
-
-        setIsLogoutModalVisible(false);
-        setIsSigningOut(false);
     };
 
     return (
@@ -130,7 +83,7 @@ export default function ProfileScreen() {
                     }
                 >
                     <View style={styles.avatar} />
-                    <Text style={styles.username}>{username}</Text>
+                    <Text style={styles.username}>Guest</Text>
 
                     {isRefreshingInsights ? (
                         <ProfileInsightsSkeleton />
@@ -152,53 +105,8 @@ export default function ProfileScreen() {
                         </>
                     )}
 
-                    <View style={styles.logoutWrap}>
-                        <TouchableOpacity style={styles.logoutButton} activeOpacity={0.8} onPress={openLogoutModal}>
-                            <Text style={styles.logoutButtonText}>Logout</Text>
-                        </TouchableOpacity>
-                    </View>
                 </ScrollView>
             )}
-
-            <Modal
-                transparent
-                visible={isLogoutModalVisible}
-                animationType="fade"
-                onRequestClose={closeLogoutModal}
-            >
-                <Pressable style={styles.modalShade} onPress={closeLogoutModal}>
-                    <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-                        <Text style={styles.modalTitle}>Logout</Text>
-                        <Text style={styles.modalMessage}>Are you sure you want to logout?</Text>
-
-                        {logoutError.length > 0 && <Text style={styles.modalError}>{logoutError}</Text>}
-
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={styles.modalButton}
-                                activeOpacity={0.8}
-                                disabled={isSigningOut}
-                                onPress={closeLogoutModal}
-                            >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.modalButton, isSigningOut && styles.disabledButton]}
-                                activeOpacity={0.8}
-                                disabled={isSigningOut}
-                                onPress={handleLogout}
-                            >
-                                {isSigningOut ? (
-                                    <ActivityIndicator color={Colors.white} />
-                                ) : (
-                                    <Text style={styles.modalButtonText}>Logout</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </Pressable>
-                </Pressable>
-            </Modal>
         </SafeAreaView>
     );
 }
