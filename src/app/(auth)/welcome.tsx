@@ -13,6 +13,7 @@ export default function WelcomeScreen() {
     const router = useRouter();
 
     const goToEmailAuth = () => router.push("/(auth)/login");
+    const goToSignUp = () => router.push("/(auth)/verify"); //!TODO: signup
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -51,7 +52,7 @@ export default function WelcomeScreen() {
 
                 <View style={styles.signUpRow}>
                     <Text style={styles.signUpText}>Don&apos;t have an account? </Text>
-                    <TouchableOpacity onPress={goToEmailAuth}>
+                    <TouchableOpacity onPress={goToSignUp}>
                         <Text style={styles.signUpLink}>Sign up</Text>
                     </TouchableOpacity>
                 </View>
