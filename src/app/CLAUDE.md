@@ -64,7 +64,7 @@ For every feature:
 5. Prefer readable code over clever code.
 6. Build the smallest useful version first.
 7. Refactor only when repetition or complexity appears.
-
+8. Never use Expo web server to verify the screen.
 This project should feel like a real app, but remain approachable.
 
 ---
