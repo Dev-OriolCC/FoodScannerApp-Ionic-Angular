@@ -32,8 +32,12 @@ export default function HomeScreen() {
                     <Text style={styles.scanText}>Start Scanning</Text>
                 </View>
 
-                <TouchableOpacity style={styles.scanButton} activeOpacity={0.8} 
-                onPress={() => router.push("/FormBarcodeScreen")} >
+                <Text className="text-xl font-bold text-blue-500">
+                    --Welcome to Nativewind--
+                </Text>
+
+                <TouchableOpacity style={styles.scanButton} activeOpacity={0.8}
+                    onPress={() => router.push("/FormBarcodeScreen")} >
                     <Text style={styles.scanButtonText}>Scan Barcode</Text>
                 </TouchableOpacity>
             </View>

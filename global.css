@@ -1,5 +1,70 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css";
- 
+
 @import "nativewind/theme";
+
+/**
+ * Sellómetro design system tokens.
+ * Keep in sync with src/theme/*.ts (the JS-side mirror used outside NativeWind,
+ * e.g. StyleSheet, icon colors, shadow style objects).
+ */
+@theme {
+  /* Colors */
+  --color-primary-700: #2e7d32;
+  --color-primary-500: #43a047;
+  --color-primary-300: #a5d6a7;
+  --color-primary-100: #e8f5e9;
+
+  --color-secondary-700: #1b2a1c;
+  --color-secondary-500: #4e5d52;
+  --color-secondary-300: #a7b7ab;
+  --color-secondary-100: #e7ece9;
+
+  --color-accent: #00c853;
+  --color-accent-light: #b9f6ca;
+
+  --color-error: #ef5350;
+  --color-warning: #fb8c00;
+  --color-info: #42a5f5;
+  --color-success: #66bb6a;
+
+  /* Font families (static Poppins weights — see theme/fonts.ts) */
+  --font-poppins-light: "Poppins_300Light";
+  --font-poppins-regular: "Poppins_400Regular";
+  --font-poppins-medium: "Poppins_500Medium";
+  --font-poppins-semibold: "Poppins_600SemiBold";
+  --font-poppins-bold: "Poppins_700Bold";
+
+  /* Type scale — font-size + line-height (pair with a font-poppins-* class) */
+  --text-h1: 32px;
+  --text-h1--line-height: 40px;
+  --text-h2: 24px;
+  --text-h2--line-height: 32px;
+  --text-h3: 20px;
+  --text-h3--line-height: 28px;
+  --text-h4: 16px;
+  --text-h4--line-height: 24px;
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-small: 14px;
+  --text-small--line-height: 20px;
+  --text-tiny: 12px;
+  --text-tiny--line-height: 16px;
+
+  /* Spacing scale (adds semantic aliases alongside Tailwind's default p-1, p-2...) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+
+  /* Border radius scale */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}

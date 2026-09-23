@@ -13,7 +13,6 @@ An Expo mobile app that scans packaged food barcodes and tells users whether a p
 The app flags excess in:
 - Sugars
 - Saturated fat
-- Trans fat
 - Calories
 - Sodium
 - Caffeine (presence, not a threshold)
