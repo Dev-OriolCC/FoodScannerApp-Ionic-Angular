@@ -1,71 +1,115 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/types';
-import { Colors } from '../../constants/colors';
-import { useLocalSearchParams, useGlobalSearchParams, Link, useRouter } from 'expo-router';
-//TODO: TESTING_SIGNUP
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import Svg, { Polygon } from "react-native-svg";
+import { colors, fontFamily, radius, spacing } from "../../theme";
 
+// Same surface and panel colors as the auth screens (login.tsx).
+const SURFACE_BG = "#FEF7FF";
+const PANEL_BG = "#D9E7CB";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type ResultRouteProp = RouteProp<RootStackParamList, "ResultScreen">;
+// NOM-051 warning labels are black with a white outline.
+const LABEL_BG = "#000000";
+const LABEL_TEXT = "#FFFFFF";
+
+// UI only for now: static product and warnings until the real data is wired in.
+const PRODUCT_NAME = "Ocean Spray 500ml";
+
+const EXCESS_WARNINGS = [
+    { id: "calories", lines: ["EXCESO", "CALORÍAS"] },
+    { id: "sodium", lines: ["EXCESO", "SODIO"] },
+    { id: "saturatedFat", lines: ["EXCESO", "GRASAS", "SATURADAS"] },
+    { id: "sugars", lines: ["EXCESO", "AZÚCARES"] },
+];
+
+const CONTAINS_WARNINGS = [
+    { id: "caffeine", text: "CONTIENE CAFEÍNA" },
+    { id: "colorants", text: "CONTIENE COLORANTES" },
+];
+
+function Octagon({ lines }: { lines: string[] }) {
+    return (
+        <View style={styles.octagon}>
+            <Svg width="100%" height="100%" viewBox="-3 -3 106 106">
+                <Polygon
+                    points="30,0 70,0 100,30 100,70 70,100 30,100 0,70 0,30"
+                    fill={LABEL_BG}
+                    stroke="#FFFFFF"
+                    strokeWidth={3}
+                    strokeLinejoin="round"
+                />
+            </Svg>
+            <View style={styles.octagonTextBox}>
+                {lines.map((line) => (
+                    <Text key={line} style={styles.labelText}>
+                        {line}
+                    </Text>
+                ))}
+            </View>
+        </View>
+    );
+}
 
 export default function ResultScreen() {
-    const navigation = useNavigation<NavigationProp>();
-    const route = useRoute<ResultRouteProp>();
     const router = useRouter();
-    const { product } = useGlobalSearchParams();
-    const parsedProduct = typeof product === 'string' ? JSON.parse(product) : product;
+    const { id } = useLocalSearchParams<{ id: string }>();
+
+    // Back to the tabs, closing this screen and the barcode form under it.
+    const handleClose = () => router.dismissTo("/(tabs)/home");
 
     return (
-        <SafeAreaView style={styles.safe}>
-            
+        <SafeAreaView style={styles.safe} edges={["bottom"]}>
+            {/* Full-screen modal with an X on the upper left to close it. */}
+            <Stack.Screen
+                options={{
+                    headerShown: true,
+                    presentation: "fullScreenModal",
+                    animation: "slide_from_bottom",
+                    title: "",
+                    headerStyle: { backgroundColor: SURFACE_BG },
+                    headerShadowVisible: false,
+                    headerBackVisible: false,
+                    contentStyle: { backgroundColor: SURFACE_BG },
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={handleClose} hitSlop={12}>
+                            <Ionicons name="close-circle-outline" size={28} color={colors.secondary[700]} />
+                        </TouchableOpacity>
+                    ),
+                }}
+            />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.mainCard}>
-                    <Text style={styles.title}>Ocean Spray 500ml</Text>
-                    <Text style={styles.barcodeText}>[ {parsedProduct?.barcode} ]</Text>
+            <ScrollView
+                style={styles.flex}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.panel}>
+                    <Text style={styles.title}>{PRODUCT_NAME}</Text>
+                    <Text style={styles.barcode}>[ {id} ]</Text>
 
-                    <View style={styles.statsGrid}>
-                        <View style={[styles.statBox, { borderColor: Colors.greenDark }]}>
-                            <Text style={styles.statValue}>238</Text>
-                            <Text style={styles.statLabel}>Calories</Text>
-                        </View>
-                        <View style={[styles.statBox, { borderColor: '#B3261E' }]}>
-                            <Text style={styles.statValue}>17.39</Text>
-                            <Text style={styles.statLabel}>Fat</Text>
-                        </View>
-                        <View style={[styles.statBox, { borderColor: Colors.greenDark }]}>
-                            <Text style={styles.statValue}>238</Text>
-                            <Text style={styles.statLabel}>Calories</Text>
-                        </View>
-                        <View style={[styles.statBox, { borderColor: Colors.greenDark }]}>
-                            <Text style={styles.statValue}>17.39</Text>
-                            <Text style={styles.statLabel}>Fat</Text>
-                        </View>
+                    <View style={styles.octagonGrid}>
+                        {EXCESS_WARNINGS.map((warning) => (
+                            <Octagon key={warning.id} lines={warning.lines} />
+                        ))}
                     </View>
 
-                    <View style={styles.tagsContainer}>
-                        <View style={[styles.tag, { borderColor: Colors.danger }]}>
-                            <Text style={styles.tagText}>Contains Caffeine</Text>
-                        </View>
-                        <View style={[styles.tag, { borderColor: Colors.danger }]}>
-                            <Text style={styles.tagText}>Contains Colorants</Text>
-                        </View>
+                    <View style={styles.containsList}>
+                        {CONTAINS_WARNINGS.map((warning) => (
+                            <View key={warning.id} style={styles.containsLabel}>
+                                <Text style={styles.labelText}>{warning.text}</Text>
+                            </View>
+                        ))}
                     </View>
                 </View>
-
-                <TouchableOpacity
-                    style={styles.returnButton}
-                    activeOpacity={0.8}
-                    onPress={() => router.push("/(tabs)/home")}
-                >
-                    <Text style={styles.returnButtonText}>Return Home</Text>
-                </TouchableOpacity>
             </ScrollView>
+
+            <View style={styles.footer}>
+                <TouchableOpacity style={styles.returnButton} activeOpacity={0.85} onPress={handleClose}>
+                    <Text style={styles.returnButtonText}>Return</Text>
+                </TouchableOpacity>
+            </View>
         </SafeAreaView>
     );
 }
@@ -73,102 +117,92 @@ export default function ResultScreen() {
 const styles = StyleSheet.create({
     safe: {
         flex: 1,
-        backgroundColor: Colors.white,
+        backgroundColor: SURFACE_BG,
     },
-    header: {
-        paddingHorizontal: 20,
-        paddingTop: 10,
-        paddingBottom: 10,
-        backgroundColor: '#E5E5E5', // 
-    },
-    closeButton: {
-        alignSelf: 'flex-start',
-        backgroundColor: Colors.white,
-        borderRadius: 12,
-        padding: 4,
+    flex: {
+        flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 40,
-        paddingTop: 20,
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.lg,
     },
-    mainCard: {
-        backgroundColor: Colors.wheat,
-        borderRadius: 40,
-        paddingHorizontal: 20,
-        paddingVertical: 28,
-        alignItems: 'center',
-        marginBottom: 20,
+    panel: {
+        backgroundColor: PANEL_BG,
+        borderRadius: 32,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.xl,
+        alignItems: "center",
     },
     title: {
+        fontFamily: fontFamily.bold,
         fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.black,
-        marginBottom: 8,
+        lineHeight: 32,
+        color: colors.secondary[700],
+        textAlign: "center",
     },
-    barcodeText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: Colors.black,
-        marginBottom: 24,
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        width: '100%',
-        marginBottom: 8,
-    },
-    statBox: {
-        width: '48%',
-        backgroundColor: Colors.white,
-        borderRadius: 20,
-        borderWidth: 1.5,
-        paddingVertical: 20,
-        paddingHorizontal: 16,
-        marginBottom: 16,
-    },
-    statValue: {
-        fontSize: 36,
-        fontWeight: 'bold',
-        color: Colors.black,
-        marginBottom: 2,
-    },
-    statLabel: {
+    barcode: {
+        fontFamily: fontFamily.medium,
         fontSize: 16,
-        color: Colors.black,
-        fontWeight: '500',
+        lineHeight: 24,
+        color: colors.secondary[700],
+        marginTop: spacing.xs,
+        marginBottom: spacing.xl,
     },
-    tagsContainer: {
-        width: '100%',
-        gap: 12,
-        marginTop: 4,
+    octagonGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        gap: spacing.md,
+        width: "100%",
+        marginBottom: spacing.xl,
     },
-    tag: {
-        width: '100%',
-        backgroundColor: Colors.white,
-        borderWidth: 1.5,
-        borderRadius: 25,
-        paddingVertical: 14,
-        alignItems: 'center',
-        justifyContent: 'center',
+    octagon: {
+        width: "47%",
+        aspectRatio: 1,
+        alignItems: "center",
+        justifyContent: "center",
     },
-    tagText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: Colors.danger,
+    octagonTextBox: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    labelText: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: 12,
+        lineHeight: 18,
+        color: LABEL_TEXT,
+        textAlign: "center",
+    },
+    containsList: {
+        width: "100%",
+        gap: spacing.md,
+    },
+    containsLabel: {
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: LABEL_BG,
+        borderColor: "#FFFFFF",
+        borderWidth: 3,
+        borderRadius: radius.xs,
+        paddingVertical: spacing.sm,
+    },
+    footer: {
+        paddingHorizontal: spacing.xl,
+        paddingBottom: spacing.xl,
     },
     returnButton: {
-        backgroundColor: Colors.greenDark,
+        backgroundColor: colors.primary[700],
+        height: 56,
         borderRadius: 30,
-        paddingVertical: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginHorizontal: 4,
+        alignItems: "center",
+        justifyContent: "center",
     },
     returnButtonText: {
-        color: Colors.white,
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontFamily: fontFamily.semiBold,
+        fontSize: 16,
+        color: "#FFFFFF",
     },
 });

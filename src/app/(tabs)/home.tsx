@@ -1,86 +1,51 @@
 import React from "react";
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    StatusBar,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from '../../navigation/types';
-import { Colors } from "../../constants/colors";
-import { TopBar } from '../../components/TopBar';
-
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import { colors, fontFamily, spacing } from "../../theme";
 
 export default function HomeScreen() {
-    const navigation = useNavigation<NavigationProp>();
     const router = useRouter();
+
     return (
-        <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
+        <View style={styles.container}>
+            <Text style={styles.title}>Let’s Start Scanning</Text>
 
-            <TopBar />
-
-            <View style={styles.content}>
-
-                <View style={styles.scanTextWrapper}>
-                    <Text style={styles.scanText}>Start Scanning</Text>
-                </View>
-
-
-                <TouchableOpacity style={styles.scanButton} activeOpacity={0.8}
-                    onPress={() => router.push("/FormBarcodeScreen")} >
-                    <Text style={styles.scanButtonText}>Scan Barcode</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+            <TouchableOpacity
+                style={styles.scanButton}
+                activeOpacity={0.85}
+                onPress={() => router.push("/FormBarcodeScreen")}
+            >
+                <Text style={styles.scanButtonText}>SCAN BARCODE</Text>
+            </TouchableOpacity>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    safe: {
+    container: {
         flex: 1,
-        backgroundColor: Colors.white,
+        justifyContent: "center",
+        paddingHorizontal: spacing.xl,
+        paddingBottom: spacing["3xl"],
     },
-
-    content: {
-        flex: 1,
+    title: {
+        fontFamily: fontFamily.medium,
+        fontSize: 48,
+        lineHeight: 56,
+        color: colors.secondary[700],
+        marginBottom: spacing.xl,
+    },
+    scanButton: {
+        backgroundColor: colors.primary[700],
+        height: 48,
+        borderRadius: 24,
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 24,
-        marginTop: -60,
-    },
-
-    scanTextWrapper: {
-        position: "relative",
-        marginBottom: 40,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-    },
-
-    scanText: {
-        fontSize: 72,
-        fontWeight: "800",
-        color: Colors.black,
-        textAlign: "center",
-    },
-
-    scanButton: {
-        backgroundColor: Colors.greenDark,
-        paddingVertical: 18,
-        paddingHorizontal: 48,
-        borderRadius: 30,
-        width: "100%",
-        alignItems: "center",
     },
     scanButtonText: {
-        color: Colors.white,
-        fontSize: 24,
-        fontWeight: "700",
+        fontFamily: fontFamily.semiBold,
+        fontSize: 14,
+        letterSpacing: 0.5,
+        color: "#FFFFFF",
     },
 });

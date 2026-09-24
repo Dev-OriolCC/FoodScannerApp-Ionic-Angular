@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Product, RootStackParamList } from "../navigation/types";
 import {
     Animated,
     Easing,
+    KeyboardAvoidingView,
     Modal,
+    Platform,
     StyleSheet,
     Text,
     TextInput,
@@ -13,12 +12,15 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Colors } from "../constants/colors";
+import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRouter } from "expo-router";
+import { Product } from "../navigation/types";
+import { colors, fontFamily, radius, spacing } from "../theme";
 
-type Navigation = NativeStackNavigationProp<RootStackParamList>
+// Same surface and panel colors as the auth screens (login.tsx).
+const SURFACE_BG = "#FEF7FF";
+const PANEL_BG = "#D9E7CB";
 
 async function fetchProductByBarcode(barcode: string): Promise<Product> {
     await new Promise((resolve) => setTimeout(resolve, 10000));
@@ -29,9 +31,8 @@ async function fetchProductByBarcode(barcode: string): Promise<Product> {
 }
 
 export default function FormBarcodeScreen() {
-    const navigation = useNavigation<Navigation>();
     const router = useRouter();
-    
+
     const scanLockRef = useRef(false);
     const isMountedRef = useRef(true);
     const spinnerValue = useRef(new Animated.Value(0)).current;
@@ -41,6 +42,8 @@ export default function FormBarcodeScreen() {
     const [isScanning, setIsScanning] = useState(false);
     const [isLoadingProduct, setIsLoadingProduct] = useState(false);
     const [scanError, setScanError] = useState("");
+
+    const hasBarcode = barcode.trim().length > 0;
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -69,6 +72,8 @@ export default function FormBarcodeScreen() {
             animation.stop();
         };
     }, [isLoadingProduct, spinnerValue]);
+
+    const handleClose = () => router.back();
 
     const handleClear = () => setBarcode("");
 
@@ -144,6 +149,29 @@ export default function FormBarcodeScreen() {
         }
     };
 
+    // Full-screen modal with an X on the upper left to close it.
+    const header = (
+        <Stack.Screen
+            options={{
+                headerShown: true,
+                presentation: "fullScreenModal",
+                animation: "slide_from_bottom",
+                title: "Enter Information",
+                headerTitleAlign: "center",
+                headerTitleStyle: { fontFamily: fontFamily.medium, fontSize: 16, color: colors.secondary[700] },
+                headerStyle: { backgroundColor: SURFACE_BG },
+                headerShadowVisible: false,
+                headerBackVisible: false,
+                contentStyle: { backgroundColor: SURFACE_BG },
+                headerLeft: () => (
+                    <TouchableOpacity onPress={handleClose} hitSlop={12} disabled={isLoadingProduct}>
+                        <Ionicons name="close-circle-outline" size={28} color={colors.secondary[700]} />
+                    </TouchableOpacity>
+                ),
+            }}
+        />
+    );
+
     if (isLoadingProduct) {
         const rotation = spinnerValue.interpolate({
             inputRange: [0, 1],
@@ -156,7 +184,8 @@ export default function FormBarcodeScreen() {
         });
 
         return (
-            <SafeAreaView style={styles.loadingSafe}>
+            <SafeAreaView style={styles.safe} edges={["bottom"]}>
+                {header}
                 <View style={styles.loadingCenter}>
                     <Animated.View style={[styles.loadingHalo, { transform: [{ scale: pulseScale }] }]} />
                     <Animated.View style={[styles.loadingSpinner, { transform: [{ rotate: rotation }] }]} />
@@ -166,62 +195,60 @@ export default function FormBarcodeScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.safe}>
-            <View style={styles.content}>
+        <SafeAreaView style={styles.safe} edges={["bottom"]}>
+            {header}
+            <KeyboardAvoidingView
+                style={styles.flex}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+                <View style={styles.body}>
+                    <View style={styles.panel}>
+                        <View style={styles.inputBox}>
+                            <View style={styles.inputContent}>
+                                <Text style={styles.inputLabel}>Enter Barcode</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={barcode}
+                                    onChangeText={setBarcode}
+                                    keyboardType="numeric"
+                                    placeholder="10300622"
+                                    placeholderTextColor={colors.secondary[300]}
+                                />
+                            </View>
+                            {barcode.length > 0 && (
+                                <TouchableOpacity onPress={handleClear} hitSlop={8}>
+                                    <Ionicons name="close-circle-outline" size={20} color={colors.secondary[700]} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
 
+                        <TouchableOpacity style={styles.cameraButton} activeOpacity={0.85} onPress={handleOpenCamera}>
+                            <Ionicons name="camera-outline" size={22} color={colors.secondary[700]} />
+                            <Text style={styles.cameraButtonText}>Scan with Camera</Text>
+                        </TouchableOpacity>
 
-                <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Enter Barcode</Text>
-                    <View style={styles.inputRow}>
-                        <TextInput
-                            style={styles.textInput}
-                            value={barcode}
-                            onChangeText={setBarcode}
-                            keyboardType="numeric"
-                            placeholder="Enter barcode number"
-                            placeholderTextColor={Colors.blackLight}
-                            editable={!isLoadingProduct}
-                        />
-                        {barcode.length > 0 && (
-                            <TouchableOpacity disabled={isLoadingProduct} onPress={handleClear} activeOpacity={0.7}>
-                                <Ionicons name="close-circle-outline" size={22} color={Colors.blackLight} />
-                            </TouchableOpacity>
+                        {scanError.length > 0 && !isCameraOpen && (
+                            <Text style={styles.errorText}>{scanError}</Text>
                         )}
                     </View>
                 </View>
 
-                {/* Scan with Camera */}
-                <TouchableOpacity
-                    style={styles.cameraButton}
-                    activeOpacity={0.7}
-                    disabled={isLoadingProduct}
-                    onPress={handleOpenCamera}
-                >
-                    <Ionicons name="camera-outline" size={22} color={Colors.black} />
-                    <Text style={styles.cameraButtonText}>Scan with Camera</Text>
-                </TouchableOpacity>
-
-                {scanError.length > 0 && !isCameraOpen && (
-                    <Text style={styles.inlineError}>{scanError}</Text>
-                )}
-            </View>
-
-            <TouchableOpacity
-                style={[
-                    styles.scanButton,
-                    { backgroundColor: barcode ? Colors.greenDark : Colors.greenDarkLight }
-                ]}
-                activeOpacity={0.8}
-                disabled={!barcode.trim() || isLoadingProduct}
-                onPress={handleSubmitBarcode}
-            >
-                <Text style={styles.scanButtonText}>Submit</Text>
-            </TouchableOpacity>
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={[styles.submitButton, !hasBarcode && styles.buttonDisabled]}
+                        activeOpacity={0.85}
+                        disabled={!hasBarcode}
+                        onPress={handleSubmitBarcode}
+                    >
+                        <Text style={styles.submitButtonText}>Submit</Text>
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
 
             <Modal visible={isCameraOpen} animationType="slide" onRequestClose={handleCloseCamera}>
                 <SafeAreaView style={styles.cameraSafe}>
                     <CameraView
-                        style={styles.camera}
+                        style={styles.flex}
                         facing="back"
                         barcodeScannerSettings={{
                             barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "qr"],
@@ -235,7 +262,7 @@ export default function FormBarcodeScreen() {
                                 disabled={isScanning}
                                 onPress={handleCloseCamera}
                             >
-                                <Ionicons name="close-outline" size={30} color={Colors.white} />
+                                <Ionicons name="close-outline" size={28} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
 
@@ -253,21 +280,95 @@ export default function FormBarcodeScreen() {
                     </CameraView>
                 </SafeAreaView>
             </Modal>
-
         </SafeAreaView>
-    )
+    );
 }
 
 const styles = StyleSheet.create({
-
     safe: {
         flex: 1,
-        backgroundColor: Colors.white,
+        backgroundColor: SURFACE_BG,
     },
-    loadingSafe: {
+    flex: {
         flex: 1,
-        backgroundColor: Colors.white,
     },
+    body: {
+        flex: 1,
+        justifyContent: "center",
+        paddingHorizontal: spacing.lg,
+    },
+    panel: {
+        backgroundColor: PANEL_BG,
+        borderRadius: 32,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.xl,
+    },
+    inputBox: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#FFFFFF",
+        borderRadius: radius.xs,
+        borderBottomWidth: 2,
+        borderBottomColor: colors.secondary[300],
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        marginBottom: spacing.lg,
+    },
+    inputContent: {
+        flex: 1,
+    },
+    inputLabel: {
+        fontFamily: fontFamily.regular,
+        fontSize: 12,
+        color: colors.secondary[500],
+    },
+    input: {
+        fontFamily: fontFamily.regular,
+        fontSize: 16,
+        color: colors.secondary[700],
+        paddingVertical: spacing.xs,
+    },
+    cameraButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#FFFFFF",
+        height: 48,
+        borderRadius: 24,
+        gap: spacing.md,
+    },
+    cameraButtonText: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: 16,
+        color: colors.secondary[700],
+    },
+    errorText: {
+        fontFamily: fontFamily.regular,
+        fontSize: 12,
+        color: colors.semantic.error,
+        marginTop: spacing.md,
+        textAlign: "center",
+    },
+    footer: {
+        paddingHorizontal: spacing.xl,
+        paddingBottom: spacing.xl,
+    },
+    submitButton: {
+        backgroundColor: colors.primary[700],
+        height: 56,
+        borderRadius: 30,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    buttonDisabled: {
+        backgroundColor: colors.primary[300],
+    },
+    submitButtonText: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: 16,
+        color: "#FFFFFF",
+    },
+
     loadingCenter: {
         flex: 1,
         alignItems: "center",
@@ -275,114 +376,29 @@ const styles = StyleSheet.create({
     },
     loadingHalo: {
         position: "absolute",
-        width: 96,
-        height: 96,
-        borderRadius: 48,
-        backgroundColor: Colors.greenLight,
-        opacity: 0.42,
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: PANEL_BG,
     },
     loadingSpinner: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        borderWidth: 8,
-        borderColor: Colors.cardBorder,
-        borderTopColor: Colors.greenDark,
-        borderRightColor: Colors.greenLight,
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        borderWidth: 14,
+        borderColor: colors.secondary[100],
+        borderTopColor: colors.primary[700],
+        borderRightColor: colors.primary[300],
     },
 
-    content: {
-        // flex: 1
-        backgroundColor: Colors.historyBg,
-        borderTopLeftRadius: 50,
-        borderTopRightRadius: 50,
-        borderBottomLeftRadius: 50,
-        borderBottomRightRadius: 50,
-        marginLeft: 7,
-        marginRight: 7,
-        paddingTop: 40,
-        paddingBottom: 40,
-        paddingHorizontal: 28,
-        marginBottom: 20,
-    },
-
-    inputContainer: {
-        backgroundColor: Colors.white,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.cardBorder,
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 12,
-        marginBottom: 14,
-    },
-    inputLabel: {
-        fontSize: 12,
-        color: Colors.blackLight,
-        marginBottom: 2,
-    },
-    inputRow: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    textInput: {
-        flex: 1,
-        fontSize: 16,
-        color: Colors.black,
-        paddingVertical: 2,
-    },
-
-    cameraButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: Colors.white,
-        borderWidth: 1,
-        borderColor: Colors.cardBorder,
-        borderRadius: 30,
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-
-        gap: 10,
-    },
-    cameraButtonText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: Colors.black,
-    },
-    inlineError: {
-        color: Colors.danger,
-        fontSize: 14,
-        fontWeight: "600",
-        lineHeight: 20,
-        marginTop: 12,
-        textAlign: "center",
-    },
-    scanButton: {
-        color: Colors.greenDark,
-        paddingVertical: 18,
-        paddingHorizontal: 48,
-        borderRadius: 30,
-        marginHorizontal: 6,
-        alignItems: "center",
-        width: "97%",
-    },
-    scanButtonText: {
-        color: Colors.white,
-        fontSize: 24,
-        fontWeight: "700",
-    },
     cameraSafe: {
         flex: 1,
-        backgroundColor: Colors.black,
-    },
-    camera: {
-        flex: 1,
+        backgroundColor: "#000000",
     },
     cameraTopBar: {
         alignItems: "flex-start",
-        paddingHorizontal: 18,
-        paddingTop: 12,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
     },
     cameraIconButton: {
         alignItems: "center",
@@ -390,13 +406,13 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: "rgba(6, 32, 0, 0.72)",
+        backgroundColor: "rgba(27, 42, 28, 0.72)",
     },
     cameraOverlay: {
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 28,
+        paddingHorizontal: spacing.xl,
     },
     scanFrame: {
         width: "100%",
@@ -404,44 +420,44 @@ const styles = StyleSheet.create({
         height: 190,
         borderRadius: 28,
         borderWidth: 4,
-        borderColor: Colors.greenLight,
-        backgroundColor: "rgba(254, 254, 254, 0.08)",
+        borderColor: colors.primary[300],
+        backgroundColor: "rgba(255, 255, 255, 0.08)",
     },
     cameraHint: {
-        color: Colors.white,
-        fontSize: 16,
-        fontWeight: "700",
-        marginTop: 18,
+        fontFamily: fontFamily.semiBold,
+        fontSize: 14,
+        color: "#FFFFFF",
+        marginTop: spacing.lg,
         textAlign: "center",
     },
     cameraBottomBar: {
-        paddingHorizontal: 20,
-        paddingBottom: 34,
+        paddingHorizontal: spacing.xl,
+        paddingBottom: spacing["2xl"],
     },
     cameraError: {
         alignSelf: "center",
-        color: Colors.white,
-        backgroundColor: "rgba(179, 38, 30, 0.88)",
-        borderRadius: 18,
-        fontSize: 14,
-        fontWeight: "700",
-        lineHeight: 20,
-        marginBottom: 14,
+        fontFamily: fontFamily.semiBold,
+        fontSize: 12,
+        lineHeight: 18,
+        color: "#FFFFFF",
+        backgroundColor: colors.semantic.error,
+        borderRadius: radius.xl,
         overflow: "hidden",
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        marginBottom: spacing.md,
         textAlign: "center",
     },
     cameraStatus: {
         alignSelf: "center",
-        color: Colors.greenDark,
-        backgroundColor: Colors.white,
-        borderRadius: 18,
-        fontSize: 15,
-        fontWeight: "800",
+        fontFamily: fontFamily.semiBold,
+        fontSize: 14,
+        color: colors.primary[700],
+        backgroundColor: "#FFFFFF",
+        borderRadius: radius.xl,
         overflow: "hidden",
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
         textAlign: "center",
     },
-})
+});
