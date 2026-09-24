@@ -29,7 +29,7 @@ export default function TabLayout() {
             }}
         >
             <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: tabIcon('home') }} />
-            <Tabs.Screen name="history" options={{ title: 'History', tabBarIcon: tabIcon('history') }} />
+            <Tabs.Screen name="history" options={{ title: 'History', headerTitle: 'Products', tabBarIcon: tabIcon('history') }} />
             <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('avatar') }} />
         </Tabs>
     );

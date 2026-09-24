@@ -1,25 +1,22 @@
 import React, { useMemo, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Product, RootStackParamList, TabParamList } from "../../navigation/types";
-import { Colors } from "../../constants/colors";
-import { Ionicons } from "@expo/vector-icons";
 import {
+    FlatList,
     Modal,
     Pressable,
-    Text,
     StyleSheet,
-    View,
+    Text,
     TextInput,
-    FlatList,
     TouchableOpacity,
+    View,
 } from "react-native";
-import { TopBar } from "../../components/TopBar";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, fontFamily, radius, shadows, spacing, textStyles } from "../../theme";
 
-type Props = BottomTabScreenProps<TabParamList, keyof TabParamList>;
-type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
+// Same surface and panel colors as the auth screens (login.tsx).
+const SURFACE_BG = "#FEF7FF";
+const PANEL_BG = "#D9E7CB";
+
 type HistoryFilter = "az" | "za" | "dateDesc" | "dateAsc" | "favorites";
 
 interface HistoryProduct {
@@ -31,6 +28,7 @@ interface HistoryProduct {
     timestamp: number;
 }
 
+// UI only for now: static products until the real scan history is wired in.
 const PRODUCTS: HistoryProduct[] = [
     {
         id: "1",
@@ -117,7 +115,7 @@ export default function HistoryScreen() {
 
     const handleDelete = (id: string) => {
         setSelectedProductId(id);
-    }
+    };
 
     const handleCancelDelete = () => {
         setSelectedProductId(null);
@@ -132,7 +130,7 @@ export default function HistoryScreen() {
             currentProducts.filter((product) => product.id !== selectedProductId)
         ));
         setSelectedProductId(null);
-    }
+    };
 
     const handleToggleFavorite = (id: string) => {
         setProducts((currentProducts) => (
@@ -155,85 +153,98 @@ export default function HistoryScreen() {
         setIsFilterModalVisible(false);
     };
 
-    const handleViewProduct = async (id: string) => {
+    const handleViewProduct = (id: string) => {
         const product = products.find((currentProduct) => currentProduct.id === id);
 
         if (!product) {
             return;
         }
 
-        const routeProduct: Product = {
-            barcode: product.barcode,
-        };
+        router.push({
+            pathname: "/result/[id]",
+            params: { id: product.barcode, product: JSON.stringify({ barcode: product.barcode }) },
+        });
+    };
 
-        router.push({ pathname: `/result/${routeProduct.barcode}`, params: { product: JSON.stringify(routeProduct) } });
-    }
+    const handleScanBarcode = () => router.push("/FormBarcodeScreen");
+
+    // Temporary: empties the static list to preview the empty state.
+    const handleClearProducts = () => setProducts([]);
 
     const renderItem = ({ item }: { item: HistoryProduct }) => (
         <View style={styles.card}>
-            <View style={styles.cardIcon} />
+            <View style={styles.cardImage} />
 
             <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
                 <Text style={styles.cardDate}>{item.date}</Text>
 
                 <View style={styles.cardActions}>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item.id)} >
-                        <Ionicons name="trash-outline" size={18} color={Colors.greenDark} />
+                    <TouchableOpacity style={styles.actionButton} hitSlop={6} onPress={() => handleDelete(item.id)}>
+                        <Ionicons name="trash-outline" size={16} color={colors.secondary[700]} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleToggleFavorite(item.id)}>
-                        <Ionicons name={item.isFavorite ? "star" : "star-outline"} size={18} color={Colors.greenDark} />
+                    <TouchableOpacity style={styles.actionButton} hitSlop={6} onPress={() => handleToggleFavorite(item.id)}>
+                        <Ionicons
+                            name={item.isFavorite ? "star" : "star-outline"}
+                            size={16}
+                            color={colors.secondary[700]}
+                        />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleViewProduct(item.id)}>
-                        <Ionicons name="open-outline" size={18} color={Colors.greenDark} />
+                    <TouchableOpacity style={styles.actionButton} hitSlop={6} onPress={() => handleViewProduct(item.id)}>
+                        <Ionicons name="open-outline" size={16} color={colors.secondary[700]} />
                     </TouchableOpacity>
                 </View>
             </View>
         </View>
     );
 
-    return (
-        <SafeAreaView style={styles.safe}>
-            <TopBar />
+    if (products.length === 0) {
+        return (
+            <View style={styles.emptyContainer}>
+                <View style={styles.emptyImage} />
+                <Text style={styles.emptyTitle}>No products yet</Text>
+                <Text style={styles.emptySubtitle}>Start scanning your first products today</Text>
 
-            <View style={styles.searchRow}>
-                <View style={styles.searchBar}>
-                    <Ionicons name="search-outline" size={22} color={Colors.blackLight} />
-                    <TextInput
-                        placeholder="Search"
-                        placeholderTextColor={Colors.blackLight}
-                        style={styles.searchInput}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity style={styles.clearSearchBtn} onPress={() => setSearchQuery("")}>
-                            <Ionicons name="close-circle-outline" size={20} color={Colors.blackLight} />
-                        </TouchableOpacity>
-                    )}
-                    <TouchableOpacity style={styles.filterBtn} onPress={handleOpenFilters}>
-                        <Ionicons
-                            name={activeFilter === "favorites" ? "filter" : "filter-outline"}
-                            size={22}
-                            color={Colors.black}
-                        />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.scanButton} activeOpacity={0.85} onPress={handleScanBarcode}>
+                    <Text style={styles.scanButtonText}>Scan Barcode</Text>
+                </TouchableOpacity>
             </View>
+        );
+    }
 
+    return (
+        <View style={styles.container}>
+            <View style={styles.searchBar}>
+                <Ionicons name="search" size={22} color={colors.secondary[700]} />
+                <TextInput
+                    placeholder="Search"
+                    placeholderTextColor={colors.secondary[500]}
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+                {searchQuery.length > 0 && (
+                    <TouchableOpacity hitSlop={8} onPress={() => setSearchQuery("")}>
+                        <Ionicons name="close-circle-outline" size={20} color={colors.secondary[500]} />
+                    </TouchableOpacity>
+                )}
+                <TouchableOpacity hitSlop={8} onPress={handleOpenFilters}>
+                    <Ionicons name="menu" size={24} color={colors.secondary[700]} />
+                </TouchableOpacity>
+            </View>
 
             <FlatList
                 data={visibleProducts}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
+                style={styles.panel}
                 contentContainerStyle={styles.listContent}
-                style={styles.list}
                 showsVerticalScrollIndicator={false}
-                ListEmptyComponent={(
-                    <View style={styles.emptyState}>
-                        <Ionicons name="search-outline" size={28} color={Colors.blackLight} />
-                        <Text style={styles.emptyStateText}>No products found</Text>
-                    </View>
+                ListEmptyComponent={<Text style={styles.noResultsText}>No products found</Text>}
+                ListFooterComponent={(
+                    <TouchableOpacity style={styles.tempButton} activeOpacity={0.85} onPress={handleClearProducts}>
+                        <Text style={styles.tempButtonText}>Clear products (temporary)</Text>
+                    </TouchableOpacity>
                 )}
             />
 
@@ -252,16 +263,16 @@ export default function HistoryScreen() {
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity
-                                style={styles.modalButton}
-                                activeOpacity={0.8}
+                                style={[styles.modalButton, styles.modalButtonSecondary]}
+                                activeOpacity={0.85}
                                 onPress={handleCancelDelete}
                             >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
+                                <Text style={[styles.modalButtonText, styles.modalButtonSecondaryText]}>Cancel</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 style={styles.modalButton}
-                                activeOpacity={0.8}
+                                activeOpacity={0.85}
                                 onPress={handleConfirmDelete}
                             >
                                 <Text style={styles.modalButtonText}>Delete</Text>
@@ -278,8 +289,8 @@ export default function HistoryScreen() {
                 onRequestClose={handleCloseFilters}
             >
                 <Pressable style={styles.modalShade} onPress={handleCloseFilters}>
-                    <Pressable style={styles.filterModalCard} onPress={(event) => event.stopPropagation()}>
-                        <Text style={styles.modalTitle}>Filter History</Text>
+                    <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
+                        <Text style={styles.modalTitle}>Filter Products</Text>
 
                         <View style={styles.filterOptions}>
                             {FILTER_OPTIONS.map((filter) => {
@@ -289,14 +300,14 @@ export default function HistoryScreen() {
                                     <TouchableOpacity
                                         key={filter}
                                         style={[styles.filterOption, isActive && styles.filterOptionActive]}
-                                        activeOpacity={0.8}
+                                        activeOpacity={0.85}
                                         onPress={() => handleSelectFilter(filter)}
                                     >
                                         <Text style={[styles.filterOptionText, isActive && styles.filterOptionTextActive]}>
                                             {FILTER_LABELS[filter]}
                                         </Text>
                                         {isActive && (
-                                            <Ionicons name="checkmark-circle" size={22} color={Colors.greenDark} />
+                                            <Ionicons name="checkmark-circle" size={22} color={colors.primary[700]} />
                                         )}
                                     </TouchableOpacity>
                                 );
@@ -305,195 +316,231 @@ export default function HistoryScreen() {
                     </Pressable>
                 </Pressable>
             </Modal>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    safe: {
+    container: {
         flex: 1,
-        backgroundColor: Colors.white,
+        paddingHorizontal: spacing.lg,
     },
 
     /* search bar */
-    searchRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 7,
-        paddingVertical: 8,
-        gap: 10,
-        marginBottom: 5,
-
-    },
     searchBar: {
-        flex: 1,
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: Colors.white,
-        borderRadius: 30,
-        borderWidth: 2,
-        borderColor: Colors.cardBorder,
-        paddingHorizontal: 12,
-        height: 50,
+        gap: spacing.md,
+        height: 48,
+        backgroundColor: "#FFFFFF",
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.secondary[100],
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
     },
     searchInput: {
         flex: 1,
-        marginLeft: 8,
+        fontFamily: fontFamily.regular,
         fontSize: 16,
-        color: Colors.black,
-    },
-    filterBtn: {
-        padding: 6,
-    },
-    clearSearchBtn: {
-        padding: 4,
+        color: colors.secondary[700],
+        paddingVertical: 0,
     },
 
-    list: {
+    /* list */
+    panel: {
         flex: 1,
-        backgroundColor: Colors.historyBg,
-        borderTopLeftRadius: 50,
-        borderTopRightRadius: 50,
-        marginLeft: 7,
-        marginRight: 7
+        backgroundColor: PANEL_BG,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
     },
     listContent: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 24,
-        gap: 12,
+        gap: spacing.md,
+        padding: spacing.lg,
+    },
+    noResultsText: {
+        ...textStyles.small,
+        color: colors.secondary[500],
+        textAlign: "center",
+        paddingVertical: spacing.xl,
     },
 
+    /* product card */
     card: {
         flexDirection: "row",
-        backgroundColor: Colors.white,
-        borderRadius: 14,
-        padding: 14,
-        alignItems: "flex-start",
+        alignItems: "center",
+        gap: spacing.md,
+        backgroundColor: "#FFFFFF",
+        borderRadius: radius.lg,
+        padding: spacing.md,
+        ...shadows.level1,
     },
-    cardIcon: {
-        width: 64,
-        height: 64,
-        borderRadius: 8,
-        backgroundColor: Colors.black,
-        marginRight: 12,
+    cardImage: {
+        width: 56,
+        height: 56,
+        borderRadius: radius.sm,
+        backgroundColor: colors.secondary[100],
     },
     cardBody: {
         flex: 1,
     },
     cardTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: Colors.black,
-        marginBottom: 2,
+        ...textStyles.h4,
+        fontFamily: fontFamily.semiBold,
+        color: colors.secondary[700],
     },
     cardDate: {
-        fontSize: 15,
-        color: Colors.blackLight,
-        marginBottom: 8,
+        ...textStyles.small,
+        color: colors.secondary[500],
     },
     cardActions: {
         flexDirection: "row",
-        gap: 18,
+        gap: spacing.sm,
+        marginTop: spacing.xs,
     },
-    actionBtn: {
-        padding: 2,
-    },
-    emptyState: {
+    actionButton: {
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 48,
-        gap: 8,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: PANEL_BG,
     },
-    emptyStateText: {
-        color: Colors.blackLight,
+
+    /* temporary clear button */
+    tempButton: {
+        alignItems: "center",
+        justifyContent: "center",
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.secondary[700],
+        marginTop: spacing.md,
+    },
+    tempButtonText: {
+        ...textStyles.small,
+        fontFamily: fontFamily.medium,
+        color: colors.secondary[700],
+    },
+
+    /* empty state */
+    emptyContainer: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: spacing.xl,
+        paddingBottom: spacing["3xl"],
+    },
+    emptyImage: {
+        width: 160,
+        height: 160,
+        borderRadius: radius.lg,
+        backgroundColor: colors.secondary[100],
+        marginBottom: spacing.xl,
+    },
+    emptyTitle: {
+        ...textStyles.h2,
+        color: colors.secondary[700],
+        textAlign: "center",
+    },
+    emptySubtitle: {
+        ...textStyles.small,
+        color: colors.secondary[500],
+        textAlign: "center",
+        marginTop: spacing.xs,
+        marginBottom: spacing.xl,
+    },
+    scanButton: {
+        alignSelf: "stretch",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.primary[700],
+        height: 56,
+        borderRadius: 30,
+    },
+    scanButtonText: {
+        fontFamily: fontFamily.semiBold,
         fontSize: 16,
-        fontWeight: "700",
+        color: "#FFFFFF",
     },
+
+    /* modals */
     modalShade: {
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.35)",
-        paddingHorizontal: 24,
+        backgroundColor: "rgba(27, 42, 28, 0.4)",
+        paddingHorizontal: spacing.xl,
     },
     modalCard: {
         width: "100%",
         maxWidth: 360,
-        backgroundColor: Colors.white,
-        borderColor: Colors.black,
-        borderRadius: 30,
-        borderWidth: 1,
-        paddingHorizontal: 20,
-        paddingBottom: 18,
-        paddingTop: 16,
+        backgroundColor: SURFACE_BG,
+        borderRadius: 32,
+        padding: spacing.xl,
+        ...shadows.level3,
     },
     modalTitle: {
-        color: Colors.black,
-        fontSize: 20,
-        fontWeight: "900",
+        ...textStyles.h3,
+        color: colors.secondary[700],
         textAlign: "center",
-        marginBottom: 36,
+        marginBottom: spacing.lg,
     },
     modalMessage: {
-        color: Colors.black,
-        fontSize: 17,
-        fontWeight: "700",
+        ...textStyles.body,
+        color: colors.secondary[700],
         textAlign: "center",
-        marginBottom: 28,
+        marginBottom: spacing.xl,
     },
     modalActions: {
         flexDirection: "row",
-        gap: 14,
+        gap: spacing.md,
     },
     modalButton: {
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#242424",
+        backgroundColor: colors.primary[700],
         borderRadius: 24,
-        height: 42,
+        height: 48,
+    },
+    modalButtonSecondary: {
+        backgroundColor: "transparent",
+        borderWidth: 1,
+        borderColor: colors.primary[700],
     },
     modalButtonText: {
-        color: Colors.white,
+        fontFamily: fontFamily.semiBold,
         fontSize: 16,
-        fontWeight: "800",
+        color: "#FFFFFF",
     },
-    filterModalCard: {
-        width: "100%",
-        maxWidth: 360,
-        backgroundColor: Colors.white,
-        borderColor: Colors.black,
-        borderRadius: 30,
-        borderWidth: 1,
-        paddingHorizontal: 20,
-        paddingBottom: 18,
-        paddingTop: 16,
+    modalButtonSecondaryText: {
+        color: colors.primary[700],
     },
     filterOptions: {
-        gap: 10,
+        gap: spacing.sm,
     },
     filterOption: {
-        minHeight: 48,
-        borderRadius: 24,
-        borderWidth: 1.5,
-        borderColor: Colors.cardBorder,
-        paddingHorizontal: 16,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
+        minHeight: 48,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: colors.secondary[100],
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: spacing.lg,
     },
     filterOptionActive: {
-        backgroundColor: Colors.historyBg,
-        borderColor: Colors.greenDark,
+        backgroundColor: colors.primary[100],
+        borderColor: colors.primary[700],
     },
     filterOptionText: {
-        color: Colors.black,
-        fontSize: 16,
-        fontWeight: "700",
+        ...textStyles.body,
+        color: colors.secondary[700],
     },
     filterOptionTextActive: {
-        color: Colors.greenDark,
-        fontWeight: "900",
+        fontFamily: fontFamily.semiBold,
+        color: colors.primary[700],
     },
 });
