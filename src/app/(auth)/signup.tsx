@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+    Alert,
     KeyboardAvoidingView,
     Platform,
     StatusBar,
@@ -12,6 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSignUp } from "@clerk/expo";
+import { parseClerkError } from "../../lib/clerkErrors";
+import { useSocialAuth } from "../../provider/useSocialAuth";
 import { colors, fontFamily, spacing } from "../../theme";
 
 // Hero background matches welcome.tsx/login.tsx; not part of the shared token set
@@ -44,6 +48,8 @@ function validateConfirmPassword(password: string, confirmPassword: string): str
 
 export default function SignUpScreen() {
     const router = useRouter();
+    const { signUp, fetchStatus } = useSignUp();
+    const { signInWithSocial, isSocialLoading } = useSocialAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -56,7 +62,20 @@ export default function SignUpScreen() {
 
     const goBack = () => router.back();
 
-    const handleSignUp = () => {
+    const isFormValid =
+        !validateEmail(email) &&
+        !validatePassword(password) &&
+        !validateConfirmPassword(password, confirmPassword);
+    const isSubmitting = fetchStatus === "fetching";
+
+    const showAuthError = (error: unknown) => {
+        const { field, message } = parseClerkError(error);
+        if (field === "email") setEmailError(message);
+        else if (field === "password") setPasswordError(message);
+        else Alert.alert("Sign up failed", message);
+    };
+
+    const handleSignUp = async () => {
         const nextEmailError = validateEmail(email);
         const nextPasswordError = validatePassword(password);
         const nextConfirmPasswordError = validateConfirmPassword(password, confirmPassword);
@@ -66,9 +85,14 @@ export default function SignUpScreen() {
 
         if (nextEmailError || nextPasswordError || nextConfirmPasswordError) return;
 
-        // Authentication is not wired up yet (Clerk migration pending); this
-        // screen only validates input and moves forward with the UI flow.
-        router.push({ pathname: "/(auth)/verify", params: { email } });
+        const emailAddress = email.trim();
+        const { error } = await signUp.password({ emailAddress, password });
+        if (error) return showAuthError(error);
+
+        const { error: sendError } = await signUp.verifications.sendEmailCode();
+        if (sendError) return showAuthError(sendError);
+
+        router.push({ pathname: "/(auth)/verify", params: { email: emailAddress, flow: "signup" } });
     };
 
     return (
@@ -169,8 +193,9 @@ export default function SignUpScreen() {
                     ) : null}
 
                     <TouchableOpacity
-                        style={styles.signUpButton}
+                        style={[styles.signUpButton, !isFormValid && styles.buttonDisabled]}
                         activeOpacity={0.85}
+                        disabled={!isFormValid || isSubmitting}
                         onPress={handleSignUp}
                     >
                         <Text style={styles.signUpButtonText}>Sign up</Text>
@@ -182,14 +207,24 @@ export default function SignUpScreen() {
                         <View style={styles.dividerLine} />
                     </View>
 
-                    <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
+                    <TouchableOpacity
+                        style={styles.socialButton}
+                        activeOpacity={0.85}
+                        disabled={isSocialLoading}
+                        onPress={() => signInWithSocial("oauth_google")}
+                    >
                         <View style={styles.socialIconCircle}>
                             <Ionicons name="logo-google" size={16} color={colors.primary[700]} />
                         </View>
                         <Text style={styles.socialButtonText}>Continue with Google</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
+                    <TouchableOpacity
+                        style={styles.socialButton}
+                        activeOpacity={0.85}
+                        disabled={isSocialLoading}
+                        onPress={() => signInWithSocial("oauth_facebook")}
+                    >
                         <View style={styles.socialIconCircle}>
                             <Ionicons name="logo-facebook" size={16} color={colors.primary[700]} />
                         </View>
@@ -202,6 +237,9 @@ export default function SignUpScreen() {
                             <Text style={styles.linkText}>Sign in</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Mount point for Clerk's bot protection on sign-up. */}
+                    <View nativeID="clerk-captcha" />
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -296,6 +334,9 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginTop: spacing.xl,
+    },
+    buttonDisabled: {
+        backgroundColor: colors.secondary[500],
     },
     signUpButtonText: {
         fontFamily: fontFamily.semiBold,

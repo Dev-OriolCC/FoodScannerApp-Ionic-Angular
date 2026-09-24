@@ -2,6 +2,7 @@ import React from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSocialAuth } from "../../provider/useSocialAuth";
 import { colors, fontFamily, spacing } from "../../theme";
 
 // Hero background from the welcome-screen mock; not part of the shared token
@@ -11,9 +12,10 @@ const PANEL_BG = "#D9E7CB";
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const { signInWithSocial, isSocialLoading } = useSocialAuth();
 
     const goToEmailAuth = () => router.push("/(auth)/login");
-    const goToSignUp = () => router.push("/(auth)/verify"); //!TODO: signup
+    const goToSignUp = () => router.push("/(auth)/signup"); 
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -36,14 +38,24 @@ export default function WelcomeScreen() {
                     <View style={styles.dividerLine} />
                 </View>
 
-                <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
+                <TouchableOpacity
+                    style={styles.socialButton}
+                    activeOpacity={0.85}
+                    disabled={isSocialLoading}
+                    onPress={() => signInWithSocial("oauth_google")}
+                >
                     <View style={styles.socialIconCircle}>
                         <Ionicons name="logo-google" size={16} color={colors.primary[700]} />
                     </View>
                     <Text style={styles.socialButtonText}>Continue with Google</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
+                <TouchableOpacity
+                    style={styles.socialButton}
+                    activeOpacity={0.85}
+                    disabled={isSocialLoading}
+                    onPress={() => signInWithSocial("oauth_facebook")}
+                >
                     <View style={styles.socialIconCircle}>
                         <Ionicons name="logo-facebook" size={16} color={colors.primary[700]} />
                     </View>

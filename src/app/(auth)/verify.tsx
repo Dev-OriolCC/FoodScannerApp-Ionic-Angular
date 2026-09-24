@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import {
+    Alert,
     KeyboardAvoidingView,
     NativeSyntheticEvent,
     Platform,
@@ -14,6 +15,9 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSignIn, useSignUp } from "@clerk/expo";
+import { alertIfSessionTask } from "../../lib/authNavigation";
+import { parseClerkError } from "../../lib/clerkErrors";
 import { colors, fontFamily, spacing } from "../../theme";
 
 // Matches the light surface used by welcome/login/signup.
@@ -22,12 +26,16 @@ const CODE_LENGTH = 6;
 
 export default function VerifyScreen() {
     const router = useRouter();
-    const { email } = useLocalSearchParams<{ email?: string }>();
+    const { email, flow } = useLocalSearchParams<{ email?: string; flow?: "signup" | "signin" }>();
+    const { signUp, fetchStatus: signUpStatus } = useSignUp();
+    const { signIn, fetchStatus: signInStatus } = useSignIn();
 
     const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
     const inputRefs = useRef<Array<TextInput | null>>([]);
 
     const isComplete = digits.every((digit) => digit !== "");
+    const isSubmitting = signUpStatus === "fetching" || signInStatus === "fetching";
+    const isSignInFlow = flow === "signin";
 
     const goBack = () => router.back();
 
@@ -59,15 +67,40 @@ export default function VerifyScreen() {
         }
     };
 
-    const handleVerify = () => {
-        if (!isComplete) return;
-
-        // Authentication is not wired up yet (Clerk migration pending); this
-        // screen only validates the code shape and moves forward with the UI flow.
-        router.replace("/(tabs)/home");
+    const showError = (error: unknown) => {
+        Alert.alert("Verification failed", parseClerkError(error).message);
     };
 
-    const handleResendCode = () => {
+    const handleVerify = async () => {
+        if (!isComplete) return;
+        const code = digits.join("");
+
+        if (isSignInFlow) {
+            const { error } = await signIn.mfa.verifyEmailCode({ code });
+            if (error) return showError(error);
+
+            if (signIn.status === "complete") {
+                const { error: finalizeError } = await signIn.finalize({ navigate: alertIfSessionTask });
+                if (finalizeError) showError(finalizeError);
+            }
+            return;
+        }
+
+        const { error } = await signUp.verifications.verifyEmailCode({ code });
+        if (error) return showError(error);
+
+        if (signUp.status === "complete") {
+            const { error: finalizeError } = await signUp.finalize({ navigate: alertIfSessionTask });
+            if (finalizeError) showError(finalizeError);
+        }
+    };
+
+    const handleResendCode = async () => {
+        const { error } = isSignInFlow
+            ? await signIn.mfa.sendEmailCode()
+            : await signUp.verifications.sendEmailCode();
+        if (error) return showError(error);
+
         setDigits(Array(CODE_LENGTH).fill(""));
         inputRefs.current[0]?.focus();
     };
@@ -111,7 +144,7 @@ export default function VerifyScreen() {
                 <TouchableOpacity
                     style={[styles.verifyButton, !isComplete && styles.verifyButtonDisabled]}
                     activeOpacity={0.85}
-                    disabled={!isComplete}
+                    disabled={!isComplete || isSubmitting}
                     onPress={handleVerify}
                 >
                     <Text style={styles.verifyButtonText}>Verify</Text>

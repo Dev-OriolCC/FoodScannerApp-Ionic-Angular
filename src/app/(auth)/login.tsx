@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+    Alert,
     KeyboardAvoidingView,
     Platform,
     StatusBar,
@@ -12,6 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSignIn } from "@clerk/expo";
+import { alertIfSessionTask } from "../../lib/authNavigation";
+import { parseClerkError } from "../../lib/clerkErrors";
 import { colors, fontFamily, spacing } from "../../theme";
 
 // Hero background matches welcome.tsx; not part of the shared token set
@@ -38,6 +42,7 @@ function validatePassword(value: string): string {
 
 export default function LoginScreen() {
     const router = useRouter();
+    const { signIn, fetchStatus } = useSignIn();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -48,7 +53,17 @@ export default function LoginScreen() {
 
     const goBack = () => router.back();
 
-    const handleSignIn = () => {
+    const isFormValid = !validateEmail(email) && !validatePassword(password);
+    const isSubmitting = fetchStatus === "fetching";
+
+    const showAuthError = (error: unknown) => {
+        const { field, message } = parseClerkError(error);
+        if (field === "email") setEmailError(message);
+        else if (field === "password") setPasswordError(message);
+        else Alert.alert("Sign in failed", message);
+    };
+
+    const handleSignIn = async () => {
         const nextEmailError = validateEmail(email);
         const nextPasswordError = validatePassword(password);
         setEmailError(nextEmailError);
@@ -56,9 +71,34 @@ export default function LoginScreen() {
 
         if (nextEmailError || nextPasswordError) return;
 
-        // Authentication is not wired up yet (Clerk migration pending); this
-        // screen only validates input and moves forward with the UI flow.
-        router.replace("/(tabs)/home");
+        const emailAddress = email.trim();
+        const { error } = await signIn.password({ emailAddress, password });
+        if (error) return showAuthError(error);
+
+        if (signIn.status === "complete") {
+            // Signed-in state flips the root layout over to the tabs (home).
+            const { error: finalizeError } = await signIn.finalize({
+                navigate: alertIfSessionTask,
+            });
+            if (finalizeError) showAuthError(finalizeError);
+            return;
+        }
+
+        // New devices are asked for an email code before the session is created.
+        if (signIn.status === "needs_client_trust" || signIn.status === "needs_second_factor") {
+            const hasEmailCode = signIn.supportedSecondFactors?.some(
+                (factor) => factor.strategy === "email_code"
+            );
+            if (!hasEmailCode) {
+                Alert.alert("Sign in failed", "This verification method is not supported yet.");
+                return;
+            }
+
+            const { error: sendError } = await signIn.mfa.sendEmailCode();
+            if (sendError) return showAuthError(sendError);
+
+            router.push({ pathname: "/(auth)/verify", params: { email: emailAddress, flow: "signin" } });
+        }
     };
 
     return (
@@ -144,8 +184,9 @@ export default function LoginScreen() {
                     </View>
 
                     <TouchableOpacity
-                        style={styles.signInButton}
+                        style={[styles.signInButton, !isFormValid && styles.buttonDisabled]}
                         activeOpacity={0.85}
+                        disabled={!isFormValid || isSubmitting}
                         onPress={handleSignIn}
                     >
                         <Text style={styles.signInButtonText}>Sign in</Text>
@@ -286,6 +327,9 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignItems: "center",
         justifyContent: "center",
+    },
+    buttonDisabled: {
+        backgroundColor: colors.secondary[500],
     },
     signInButtonText: {
         fontFamily: fontFamily.semiBold,

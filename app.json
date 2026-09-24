@@ -6,7 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "experiments": { "typedRoutes": true },
+    "experiments": {
+      "typedRoutes": true
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -42,7 +44,9 @@
         {
           "cameraPermission": "Allow NutriScan to use your camera to scan food product barcodes."
         }
-      ]
+      ],
+      "@clerk/expo",
+      "expo-secure-store"
     ]
   }
 }
