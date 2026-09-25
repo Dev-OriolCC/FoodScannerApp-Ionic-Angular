@@ -15,23 +15,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Product } from "../navigation/types";
+import { fetchProduct } from "../services/openFoodFacts";
+import { useScanStore } from "../store/useScanStore";
 import { colors, fontFamily, radius, spacing } from "../theme";
 
 // Same surface and panel colors as the auth screens (login.tsx).
 const SURFACE_BG = "#FEF7FF";
 const PANEL_BG = "#D9E7CB";
 
-async function fetchProductByBarcode(barcode: string): Promise<Product> {
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-
-    return {
-        barcode,
-    };
-}
-
 export default function FormBarcodeScreen() {
     const router = useRouter();
+    const addScan = useScanStore((state) => state.addScan);
 
     const scanLockRef = useRef(false);
     const isMountedRef = useRef(true);
@@ -131,14 +125,21 @@ export default function FormBarcodeScreen() {
         setIsLoadingProduct(true);
 
         try {
-            const product = await fetchProductByBarcode(trimmedBarcode);
+            const product = await fetchProduct(trimmedBarcode);
 
             if (!isMountedRef.current) {
                 return;
             }
 
             setIsLoadingProduct(false);
-            router.push({ pathname: `/result/${product.barcode}`, params: { product: JSON.stringify(product) } });
+
+            if (!product) {
+                setScanError("Product not found in Open Food Facts.");
+                return;
+            }
+
+            addScan(product);
+            router.push({ pathname: "/result/[id]", params: { id: product.barcode } });
         } catch {
             if (!isMountedRef.current) {
                 return;

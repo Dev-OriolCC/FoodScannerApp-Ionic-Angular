@@ -1,5 +1,12 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+#Agent Files
+src/app/CLAUDE.md
+prompt_material/
+.agent/skills/
+
+Notes.MD
+
 # dependencies
 node_modules/
 

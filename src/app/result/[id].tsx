@@ -4,6 +4,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Polygon } from "react-native-svg";
+import { CONTAINS_LABELS, EXCESS_LABELS } from "../../constants/nom051";
+import { getWarnings, hasNutritionData } from "../../lib/nom051";
+import { useScanStore } from "../../store/useScanStore";
 import { colors, fontFamily, radius, spacing } from "../../theme";
 
 // Same surface and panel colors as the auth screens (login.tsx).
@@ -13,21 +16,6 @@ const PANEL_BG = "#D9E7CB";
 // NOM-051 warning labels are black with a white outline.
 const LABEL_BG = "#000000";
 const LABEL_TEXT = "#FFFFFF";
-
-// UI only for now: static product and warnings until the real data is wired in.
-const PRODUCT_NAME = "Ocean Spray 500ml";
-
-const EXCESS_WARNINGS = [
-    { id: "calories", lines: ["EXCESO", "CALORÍAS"] },
-    { id: "sodium", lines: ["EXCESO", "SODIO"] },
-    { id: "saturatedFat", lines: ["EXCESO", "GRASAS", "SATURADAS"] },
-    { id: "sugars", lines: ["EXCESO", "AZÚCARES"] },
-];
-
-const CONTAINS_WARNINGS = [
-    { id: "caffeine", text: "CONTIENE CAFEÍNA" },
-    { id: "colorants", text: "CONTIENE COLORANTES" },
-];
 
 function Octagon({ lines }: { lines: string[] }) {
     return (
@@ -54,10 +42,22 @@ function Octagon({ lines }: { lines: string[] }) {
 
 export default function ResultScreen() {
     const router = useRouter();
-    const { id } = useLocalSearchParams<{ id: string }>();
+    // "from" is set by History; the scan flow (barcode form) doesn't pass it.
+    const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
+    const product = useScanStore((state) => state.products.find((item) => item.barcode === id));
 
-    // Back to the tabs, closing this screen and the barcode form under it.
-    const handleClose = () => router.dismissTo("/(tabs)/home");
+    const handleClose = () => {
+        if (from === "history") {
+            // Opened from History: just go back to it.
+            router.back();
+        } else {
+            // Back to the tabs, closing this screen and the barcode form under it.
+            router.dismissTo("/(tabs)/home");
+        }
+    };
+
+    const warnings = product ? getWarnings(product) : null;
+    const hasWarnings = !!warnings && (warnings.excess.length > 0 || warnings.contains.length > 0);
 
     return (
         <SafeAreaView style={styles.safe} edges={["bottom"]}>
@@ -86,22 +86,42 @@ export default function ResultScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.panel}>
-                    <Text style={styles.title}>{PRODUCT_NAME}</Text>
-                    <Text style={styles.barcode}>[ {id} ]</Text>
+                    {!product || !warnings ? (
+                        <>
+                            <Text style={styles.title}>Product not found</Text>
+                            <Text style={styles.barcode}>[ {id} ]</Text>
+                        </>
+                    ) : (
+                        <>
+                            <Text style={styles.title}>{product.name}</Text>
+                            {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
+                            <Text style={styles.barcode}>[ {id} ]</Text>
 
-                    <View style={styles.octagonGrid}>
-                        {EXCESS_WARNINGS.map((warning) => (
-                            <Octagon key={warning.id} lines={warning.lines} />
-                        ))}
-                    </View>
+                            {warnings.excess.length > 0 && (
+                                <View style={styles.octagonGrid}>
+                                    {warnings.excess.map((warningId) => (
+                                        <Octagon key={warningId} lines={EXCESS_LABELS[warningId]} />
+                                    ))}
+                                </View>
+                            )}
 
-                    <View style={styles.containsList}>
-                        {CONTAINS_WARNINGS.map((warning) => (
-                            <View key={warning.id} style={styles.containsLabel}>
-                                <Text style={styles.labelText}>{warning.text}</Text>
-                            </View>
-                        ))}
-                    </View>
+                            {warnings.contains.length > 0 && (
+                                <View style={styles.containsList}>
+                                    {warnings.contains.map((warningId) => (
+                                        <View key={warningId} style={styles.containsLabel}>
+                                            <Text style={styles.labelText}>{CONTAINS_LABELS[warningId]}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+
+                            {!hasNutritionData(product) ? (
+                                <Text style={styles.message}>Nutrition data not available for this product.</Text>
+                            ) : (
+                                !hasWarnings && <Text style={styles.message}>No NOM-051 warnings apply.</Text>
+                            )}
+                        </>
+                    )}
                 </View>
             </ScrollView>
 
@@ -142,6 +162,13 @@ const styles = StyleSheet.create({
         color: colors.secondary[700],
         textAlign: "center",
     },
+    brand: {
+        fontFamily: fontFamily.regular,
+        fontSize: 14,
+        lineHeight: 20,
+        color: colors.secondary[500],
+        textAlign: "center",
+    },
     barcode: {
         fontFamily: fontFamily.medium,
         fontSize: 16,
@@ -149,6 +176,14 @@ const styles = StyleSheet.create({
         color: colors.secondary[700],
         marginTop: spacing.xs,
         marginBottom: spacing.xl,
+    },
+    message: {
+        fontFamily: fontFamily.regular,
+        fontSize: 14,
+        lineHeight: 20,
+        color: colors.secondary[700],
+        textAlign: "center",
+        marginTop: spacing.md,
     },
     octagonGrid: {
         flexDirection: "row",

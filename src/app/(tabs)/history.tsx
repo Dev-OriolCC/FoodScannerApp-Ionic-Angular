@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { ScannedProduct, useScanStore } from "../../store/useScanStore";
 import { colors, fontFamily, radius, shadows, spacing, textStyles } from "../../theme";
 
 // Same surface and panel colors as the auth screens (login.tsx).
@@ -19,50 +21,16 @@ const PANEL_BG = "#D9E7CB";
 
 type HistoryFilter = "az" | "za" | "dateDesc" | "dateAsc" | "favorites";
 
-interface HistoryProduct {
-    id: string;
-    title: string;
-    date: string;
-    barcode: string;
-    isFavorite: boolean;
-    timestamp: number;
+// e.g. "Sep 25, 2026, 10:33 AM"
+function formatScanDate(timestamp: number) {
+    return new Date(timestamp).toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
 }
-
-// UI only for now: static products until the real scan history is wired in.
-const PRODUCTS: HistoryProduct[] = [
-    {
-        id: "1",
-        title: "Apple Juice 80ml",
-        date: "Today, 2026 - 10:33 AM",
-        barcode: "7501031311309",
-        isFavorite: false,
-        timestamp: new Date("2026-05-17T10:33:00").getTime(),
-    },
-    {
-        id: "2",
-        title: "Coca-cola Example 80ml",
-        date: "March 6, 2026 - 10:11 PM",
-        barcode: "049000042566",
-        isFavorite: true,
-        timestamp: new Date("2026-03-06T22:11:00").getTime(),
-    },
-    {
-        id: "3",
-        title: "Pizza Papa's Example 80ml",
-        date: "Today, 2026 - 10:33AM",
-        barcode: "7622210449283",
-        isFavorite: false,
-        timestamp: new Date("2026-05-17T10:32:00").getTime(),
-    },
-    {
-        id: "4",
-        title: "Mushrooms Example 80ml",
-        date: "Today, 2026 - 10:33AM",
-        barcode: "8410076472115",
-        isFavorite: true,
-        timestamp: new Date("2026-05-17T10:31:00").getTime(),
-    },
-];
 
 const FILTER_LABELS: Record<HistoryFilter, string> = {
     az: "A-Z",
@@ -76,18 +44,21 @@ const FILTER_OPTIONS: HistoryFilter[] = ["az", "za", "dateDesc", "dateAsc", "fav
 
 export default function HistoryScreen() {
     const router = useRouter();
-    const [products, setProducts] = useState(PRODUCTS);
+    const products = useScanStore((state) => state.products);
+    const removeScan = useScanStore((state) => state.removeScan);
+    const toggleFavorite = useScanStore((state) => state.toggleFavorite);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<HistoryFilter>("dateDesc");
     const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+    // Products are identified by their barcode.
     const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-    const selectedProduct = products.find((product) => product.id === selectedProductId);
+    const selectedProduct = products.find((product) => product.barcode === selectedProductId);
     const visibleProducts = useMemo(() => {
         const normalizedQuery = searchQuery.trim().toLowerCase();
 
         const filteredProducts = products.filter((product) => {
             const matchesQuery = !normalizedQuery
-                || product.title.toLowerCase().includes(normalizedQuery)
+                || product.name.toLowerCase().includes(normalizedQuery)
                 || product.barcode.includes(normalizedQuery);
 
             if (!matchesQuery) {
@@ -100,15 +71,15 @@ export default function HistoryScreen() {
         return [...filteredProducts].sort((first, second) => {
             switch (activeFilter) {
                 case "az":
-                    return first.title.localeCompare(second.title);
+                    return first.name.localeCompare(second.name);
                 case "za":
-                    return second.title.localeCompare(first.title);
+                    return second.name.localeCompare(first.name);
                 case "dateAsc":
-                    return first.timestamp - second.timestamp;
+                    return first.scannedAt - second.scannedAt;
                 case "favorites":
                 case "dateDesc":
                 default:
-                    return second.timestamp - first.timestamp;
+                    return second.scannedAt - first.scannedAt;
             }
         });
     }, [activeFilter, products, searchQuery]);
@@ -126,18 +97,12 @@ export default function HistoryScreen() {
             return;
         }
 
-        setProducts((currentProducts) => (
-            currentProducts.filter((product) => product.id !== selectedProductId)
-        ));
+        removeScan(selectedProductId);
         setSelectedProductId(null);
     };
 
     const handleToggleFavorite = (id: string) => {
-        setProducts((currentProducts) => (
-            currentProducts.map((product) => (
-                product.id === id ? { ...product, isFavorite: !product.isFavorite } : product
-            ))
-        ));
+        toggleFavorite(id);
     };
 
     const handleOpenFilters = () => {
@@ -154,48 +119,38 @@ export default function HistoryScreen() {
     };
 
     const handleViewProduct = (id: string) => {
-        const product = products.find((currentProduct) => currentProduct.id === id);
-
-        if (!product) {
-            return;
-        }
-
-        router.push({
-            pathname: "/result/[id]",
-            params: { id: product.barcode, product: JSON.stringify({ barcode: product.barcode }) },
-        });
+        // "from" lets the Result screen know it should close back to History.
+        router.push({ pathname: "/result/[id]", params: { id, from: "history" } });
     };
 
     const handleScanBarcode = () => router.push("/FormBarcodeScreen");
 
-    // Temporary: empties the static list to preview the empty state.
-    const handleClearProducts = () => setProducts([]);
-
-    const renderItem = ({ item }: { item: HistoryProduct }) => (
-        <View style={styles.card}>
-            <View style={styles.cardImage} />
+    const renderItem = ({ item }: { item: ScannedProduct }) => (
+        <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => handleViewProduct(item.barcode)}>
+            {item.imageUrl ? (
+                <Image source={{ uri: item.imageUrl }} style={styles.cardImage} contentFit="cover" />
+            ) : (
+                <View style={styles.cardImage} />
+            )}
 
             <View style={styles.cardBody}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.cardDate}>{item.date}</Text>
+                <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.cardDate}>{formatScanDate(item.scannedAt)}</Text>
 
                 <View style={styles.cardActions}>
-                    <TouchableOpacity style={styles.actionButton} hitSlop={6} onPress={() => handleDelete(item.id)}>
-                        <Ionicons name="trash-outline" size={16} color={colors.secondary[700]} />
+                    <TouchableOpacity style={styles.actionButton} hitSlop={4} onPress={() => handleDelete(item.barcode)}>
+                        <Ionicons name="trash-outline" size={20} color={colors.secondary[700]} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} hitSlop={6} onPress={() => handleToggleFavorite(item.id)}>
+                    <TouchableOpacity style={styles.actionButton} hitSlop={4} onPress={() => handleToggleFavorite(item.barcode)}>
                         <Ionicons
                             name={item.isFavorite ? "star" : "star-outline"}
-                            size={16}
+                            size={20}
                             color={colors.secondary[700]}
                         />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} hitSlop={6} onPress={() => handleViewProduct(item.id)}>
-                        <Ionicons name="open-outline" size={16} color={colors.secondary[700]} />
-                    </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     if (products.length === 0) {
@@ -235,17 +190,12 @@ export default function HistoryScreen() {
 
             <FlatList
                 data={visibleProducts}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.barcode}
                 renderItem={renderItem}
                 style={styles.panel}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={<Text style={styles.noResultsText}>No products found</Text>}
-                ListFooterComponent={(
-                    <TouchableOpacity style={styles.tempButton} activeOpacity={0.85} onPress={handleClearProducts}>
-                        <Text style={styles.tempButtonText}>Clear products (temporary)</Text>
-                    </TouchableOpacity>
-                )}
             />
 
             <Modal
@@ -258,7 +208,7 @@ export default function HistoryScreen() {
                     <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
                         <Text style={styles.modalTitle}>Delete Product</Text>
                         <Text style={styles.modalMessage}>
-                            Are you sure you want to delete {selectedProduct?.title ?? "this product"}?
+                            Are you sure you want to delete {selectedProduct?.name ?? "this product"}?
                         </Text>
 
                         <View style={styles.modalActions}>
@@ -401,26 +351,10 @@ const styles = StyleSheet.create({
     actionButton: {
         alignItems: "center",
         justifyContent: "center",
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         backgroundColor: PANEL_BG,
-    },
-
-    /* temporary clear button */
-    tempButton: {
-        alignItems: "center",
-        justifyContent: "center",
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: colors.secondary[700],
-        marginTop: spacing.md,
-    },
-    tempButtonText: {
-        ...textStyles.small,
-        fontFamily: fontFamily.medium,
-        color: colors.secondary[700],
     },
 
     /* empty state */
