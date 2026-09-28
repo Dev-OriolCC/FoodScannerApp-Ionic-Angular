@@ -40,16 +40,36 @@ export default function VerifyScreen() {
     const goBack = () => router.back();
 
     const handleChangeDigit = (text: string, index: number) => {
-        const value = text.replace(/[^0-9]/g, "").slice(-1);
+        const cleaned = text.replace(/[^0-9]/g, "");
 
+        if (cleaned.length <= 1) {
+            setDigits((prev) => {
+                const next = [...prev];
+                next[index] = cleaned;
+                return next;
+            });
+
+            if (cleaned && index < CODE_LENGTH - 1) {
+                inputRefs.current[index + 1]?.focus();
+            }
+            return;
+        }
+
+        // Pasting the full code lands all its digits in one box (maxLength no
+        // longer blocks it), so spread them across this box and the ones after it.
         setDigits((prev) => {
             const next = [...prev];
-            next[index] = value;
+            for (let offset = 0; offset < cleaned.length && index + offset < CODE_LENGTH; offset++) {
+                next[index + offset] = cleaned[offset];
+            }
             return next;
         });
 
-        if (value && index < CODE_LENGTH - 1) {
-            inputRefs.current[index + 1]?.focus();
+        const lastFilledIndex = Math.min(index + cleaned.length, CODE_LENGTH) - 1;
+        if (lastFilledIndex < CODE_LENGTH - 1) {
+            inputRefs.current[lastFilledIndex + 1]?.focus();
+        } else {
+            inputRefs.current[lastFilledIndex]?.blur();
         }
     };
 
@@ -133,7 +153,7 @@ export default function VerifyScreen() {
                             onChangeText={(text) => handleChangeDigit(text, index)}
                             onKeyPress={(event) => handleKeyPress(event, index)}
                             keyboardType="number-pad"
-                            maxLength={1}
+                            maxLength={CODE_LENGTH}
                             placeholder="-"
                             placeholderTextColor={colors.secondary[300]}
                             textAlign="center"

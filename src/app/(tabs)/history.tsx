@@ -127,6 +127,9 @@ export default function HistoryScreen() {
 
     const renderItem = ({ item }: { item: ScannedProduct }) => (
         <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => handleViewProduct(item.barcode)}>
+            {/* Visual hint that the card opens the product's Result screen. */}
+            <Ionicons name="open-outline" size={18} color={colors.secondary[500]} style={styles.cardOpenIcon} />
+
             {item.imageUrl ? (
                 <Image source={{ uri: item.imageUrl }} style={styles.cardImage} contentFit="cover" />
             ) : (
@@ -331,8 +334,15 @@ const styles = StyleSheet.create({
         borderRadius: radius.sm,
         backgroundColor: colors.secondary[100],
     },
+    cardOpenIcon: {
+        position: "absolute",
+        top: spacing.md,
+        right: spacing.md,
+    },
     cardBody: {
         flex: 1,
+        // Keeps long product names from running under the open icon.
+        paddingRight: spacing.xl,
     },
     cardTitle: {
         ...textStyles.h4,

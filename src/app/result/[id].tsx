@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import Svg, { Polygon } from "react-native-svg";
 import { CONTAINS_LABELS, EXCESS_LABELS } from "../../constants/nom051";
 import { getWarnings, hasNutritionData } from "../../lib/nom051";
@@ -35,6 +36,28 @@ function Octagon({ lines }: { lines: string[] }) {
                         {line}
                     </Text>
                 ))}
+            </View>
+        </View>
+    );
+}
+
+// Same octagon shape as the warnings, but bigger and with a positive message
+// for products that don't trigger any NOM-051 seal.
+function NoWarningsOctagon({ subtext }: { subtext: string }) {
+    return (
+        <View style={styles.bigOctagon}>
+            <Svg width="100%" height="100%" viewBox="-3 -3 106 106">
+                <Polygon
+                    points="30,0 70,0 100,30 100,70 70,100 30,100 0,70 0,30"
+                    fill={LABEL_BG}
+                    stroke="#FFFFFF"
+                    strokeWidth={3}
+                    strokeLinejoin="round"
+                />
+            </Svg>
+            <View style={styles.bigOctagonTextBox}>
+                <Text style={styles.happyFace}>:)</Text>
+                <Text style={styles.bigOctagonSubtext}>{subtext}</Text>
             </View>
         </View>
     );
@@ -85,6 +108,8 @@ export default function ResultScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                <Text style={styles.screenTitle}>Sellómetro</Text>
+
                 <View style={styles.panel}>
                     {!product || !warnings ? (
                         <>
@@ -94,6 +119,19 @@ export default function ResultScreen() {
                     ) : (
                         <>
                             <Text style={styles.title}>{product.name}</Text>
+
+                            {product.imageUrl ? (
+                                <Image
+                                    source={{ uri: product.imageUrl }}
+                                    style={styles.productImage}
+                                    contentFit="contain"
+                                />
+                            ) : (
+                                <View style={styles.productImage}>
+                                    <Ionicons name="fast-food-outline" size={40} color={colors.secondary[300]} />
+                                </View>
+                            )}
+
                             {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
                             <Text style={styles.barcode}>[ {id} ]</Text>
 
@@ -118,7 +156,9 @@ export default function ResultScreen() {
                             {!hasNutritionData(product) ? (
                                 <Text style={styles.message}>Nutrition data not available for this product.</Text>
                             ) : (
-                                !hasWarnings && <Text style={styles.message}>No NOM-051 warnings apply.</Text>
+                                !hasWarnings && (
+                                    <NoWarningsOctagon subtext="This product is free of warning seals" />
+                                )
                             )}
                         </>
                     )}
@@ -148,6 +188,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.lg,
     },
+    screenTitle: {
+        fontFamily: fontFamily.bold,
+        fontSize: 28,
+        lineHeight: 36,
+        color: colors.primary[700],
+        textAlign: "center",
+        marginBottom: spacing.lg,
+    },
     panel: {
         backgroundColor: PANEL_BG,
         borderRadius: 32,
@@ -161,6 +209,15 @@ const styles = StyleSheet.create({
         lineHeight: 32,
         color: colors.secondary[700],
         textAlign: "center",
+    },
+    productImage: {
+        width: 120,
+        height: 120,
+        borderRadius: radius.md,
+        backgroundColor: colors.secondary[100],
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: spacing.md,
     },
     brand: {
         fontFamily: fontFamily.regular,
@@ -210,6 +267,34 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         color: LABEL_TEXT,
         textAlign: "center",
+    },
+    bigOctagon: {
+        width: "65%",
+        aspectRatio: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: spacing.md,
+        marginBottom: spacing.xl,
+    },
+    bigOctagonTextBox: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: spacing.lg,
+    },
+    happyFace: {
+        fontFamily: fontFamily.bold,
+        fontSize: 40,
+        lineHeight: 48,
+        color: LABEL_TEXT,
+    },
+    bigOctagonSubtext: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: 13,
+        lineHeight: 18,
+        color: LABEL_TEXT,
+        textAlign: "center",
+        marginTop: spacing.xs,
     },
     containsList: {
         width: "100%",
