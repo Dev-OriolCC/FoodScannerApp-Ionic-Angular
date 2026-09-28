@@ -1,9 +1,11 @@
-import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useRef, useState } from "react";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import * as Sharing from "expo-sharing";
+import { captureRef } from "react-native-view-shot";
 import Svg, { Polygon } from "react-native-svg";
 import { CONTAINS_LABELS, EXCESS_LABELS } from "../../constants/nom051";
 import { getWarnings, hasNutritionData } from "../../lib/nom051";
@@ -79,6 +81,33 @@ export default function ResultScreen() {
         }
     };
 
+    // Wraps the whole result so it can be turned into an image, even the part below the fold.
+    const shotRef = useRef<View>(null);
+    const [isSharing, setIsSharing] = useState(false);
+
+    const handleShare = async () => {
+        if (isSharing) return;
+        setIsSharing(true);
+        try {
+            const uri = await captureRef(shotRef, { format: "png", quality: 1, result: "tmpfile" });
+
+            if (!(await Sharing.isAvailableAsync())) {
+                Alert.alert("Sharing not available", "Sharing isn't supported on this device.");
+                return;
+            }
+            // Opens the native iOS / Android share sheet (WhatsApp, Snapchat, Save Image...).
+            await Sharing.shareAsync(uri, {
+                mimeType: "image/png",
+                UTI: "public.png",
+                dialogTitle: "Share product result",
+            });
+        } catch {
+            Alert.alert("Something went wrong", "We couldn't prepare the image. Please try again.");
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     const warnings = product ? getWarnings(product) : null;
     const hasWarnings = !!warnings && (warnings.excess.length > 0 || warnings.contains.length > 0);
 
@@ -100,6 +129,17 @@ export default function ResultScreen() {
                             <Ionicons name="close-circle-outline" size={28} color={colors.secondary[700]} />
                         </TouchableOpacity>
                     ),
+                    // Nothing to share when the product wasn't found.
+                    headerRight: () =>
+                        product ? (
+                            <TouchableOpacity onPress={handleShare} disabled={isSharing} hitSlop={12}>
+                                {isSharing ? (
+                                    <ActivityIndicator color={colors.secondary[700]} />
+                                ) : (
+                                    <Ionicons name="share-outline" size={26} color={colors.secondary[700]} />
+                                )}
+                            </TouchableOpacity>
+                        ) : null,
                 }}
             />
 
@@ -108,60 +148,63 @@ export default function ResultScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.screenTitle}>Sellómetro</Text>
+                {/* collapsable={false} keeps Android from flattening this View, so captureRef can find it. */}
+                <View ref={shotRef} collapsable={false} style={styles.captureArea}>
+                    <Text style={styles.screenTitle}>Sellómetro</Text>
 
-                <View style={styles.panel}>
-                    {!product || !warnings ? (
-                        <>
-                            <Text style={styles.title}>Product not found</Text>
-                            <Text style={styles.barcode}>[ {id} ]</Text>
-                        </>
-                    ) : (
-                        <>
-                            <Text style={styles.title}>{product.name}</Text>
+                    <View style={styles.panel}>
+                        {!product || !warnings ? (
+                            <>
+                                <Text style={styles.title}>Product not found</Text>
+                                <Text style={styles.barcode}>[ {id} ]</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Text style={styles.title}>{product.name}</Text>
 
-                            {product.imageUrl ? (
-                                <Image
-                                    source={{ uri: product.imageUrl }}
-                                    style={styles.productImage}
-                                    contentFit="contain"
-                                />
-                            ) : (
-                                <View style={styles.productImage}>
-                                    <Ionicons name="fast-food-outline" size={40} color={colors.secondary[300]} />
-                                </View>
-                            )}
+                                {product.imageUrl ? (
+                                    <Image
+                                        source={{ uri: product.imageUrl }}
+                                        style={styles.productImage}
+                                        contentFit="contain"
+                                    />
+                                ) : (
+                                    <View style={styles.productImage}>
+                                        <Ionicons name="fast-food-outline" size={40} color={colors.secondary[300]} />
+                                    </View>
+                                )}
 
-                            {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
-                            <Text style={styles.barcode}>[ {id} ]</Text>
+                                {product.brand && <Text style={styles.brand}>{product.brand}</Text>}
+                                <Text style={styles.barcode}>[ {id} ]</Text>
 
-                            {warnings.excess.length > 0 && (
-                                <View style={styles.octagonGrid}>
-                                    {warnings.excess.map((warningId) => (
-                                        <Octagon key={warningId} lines={EXCESS_LABELS[warningId]} />
-                                    ))}
-                                </View>
-                            )}
+                                {warnings.excess.length > 0 && (
+                                    <View style={styles.octagonGrid}>
+                                        {warnings.excess.map((warningId) => (
+                                            <Octagon key={warningId} lines={EXCESS_LABELS[warningId]} />
+                                        ))}
+                                    </View>
+                                )}
 
-                            {warnings.contains.length > 0 && (
-                                <View style={styles.containsList}>
-                                    {warnings.contains.map((warningId) => (
-                                        <View key={warningId} style={styles.containsLabel}>
-                                            <Text style={styles.labelText}>{CONTAINS_LABELS[warningId]}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            )}
+                                {warnings.contains.length > 0 && (
+                                    <View style={styles.containsList}>
+                                        {warnings.contains.map((warningId) => (
+                                            <View key={warningId} style={styles.containsLabel}>
+                                                <Text style={styles.labelText}>{CONTAINS_LABELS[warningId]}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                )}
 
-                            {!hasNutritionData(product) ? (
-                                <Text style={styles.message}>Nutrition data not available for this product.</Text>
-                            ) : (
-                                !hasWarnings && (
-                                    <NoWarningsOctagon subtext="This product is free of warning seals" />
-                                )
-                            )}
-                        </>
-                    )}
+                                {!hasNutritionData(product) ? (
+                                    <Text style={styles.message}>Nutrition data not available for this product.</Text>
+                                ) : (
+                                    !hasWarnings && (
+                                        <NoWarningsOctagon subtext="This product is free of warning seals" />
+                                    )
+                                )}
+                            </>
+                        )}
+                    </View>
                 </View>
             </ScrollView>
 
@@ -184,9 +227,14 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
+    },
+    // Solid background so the shared image isn't transparent.
+    captureArea: {
+        flexGrow: 1,
         justifyContent: "center",
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.lg,
+        backgroundColor: SURFACE_BG,
     },
     screenTitle: {
         fontFamily: fontFamily.bold,
