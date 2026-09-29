@@ -56,3 +56,17 @@ export function getWarnings(product: ProductInfo): ProductWarnings {
 export function hasNutritionData(product: ProductInfo): boolean {
     return Object.values(product.nutrients).some((value) => value !== undefined);
 }
+
+export type HealthStatus = "healthy" | "unhealthy" | "unknown";
+
+// Tag saved with each scan. "unknown" means no warnings, but also no nutrition
+// data to check, so we can't call the product healthy.
+export function getHealthStatus(product: ProductInfo): HealthStatus {
+    const { excess, contains } = getWarnings(product);
+
+    if (excess.length > 0 || contains.length > 0) {
+        return "unhealthy";
+    }
+
+    return hasNutritionData(product) ? "healthy" : "unknown";
+}

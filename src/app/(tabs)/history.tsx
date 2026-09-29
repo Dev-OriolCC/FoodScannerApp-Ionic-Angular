@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from "react";
 import {
+    ActivityIndicator,
+    Alert,
     FlatList,
     Modal,
     Pressable,
+    RefreshControl,
     StyleSheet,
     Text,
     TextInput,
@@ -47,6 +50,10 @@ export default function HistoryScreen() {
     const products = useScanStore((state) => state.products);
     const removeScan = useScanStore((state) => state.removeScan);
     const toggleFavorite = useScanStore((state) => state.toggleFavorite);
+    const userId = useScanStore((state) => state.userId);
+    const isLoading = useScanStore((state) => state.isLoading);
+    const loadError = useScanStore((state) => state.loadError);
+    const loadHistory = useScanStore((state) => state.loadHistory);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<HistoryFilter>("dateDesc");
     const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -92,17 +99,32 @@ export default function HistoryScreen() {
         setSelectedProductId(null);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (!selectedProductId) {
             return;
         }
 
-        removeScan(selectedProductId);
         setSelectedProductId(null);
+
+        try {
+            await removeScan(selectedProductId);
+        } catch {
+            Alert.alert("Something went wrong", "We couldn't delete this product. Please try again.");
+        }
     };
 
-    const handleToggleFavorite = (id: string) => {
-        toggleFavorite(id);
+    const handleToggleFavorite = async (id: string) => {
+        try {
+            await toggleFavorite(id);
+        } catch {
+            Alert.alert("Something went wrong", "We couldn't update your favorites. Please try again.");
+        }
+    };
+
+    const handleRefresh = () => {
+        if (userId) {
+            loadHistory(userId);
+        }
     };
 
     const handleOpenFilters = () => {
@@ -156,6 +178,28 @@ export default function HistoryScreen() {
         </TouchableOpacity>
     );
 
+    // First load: show a spinner instead of flashing the empty state.
+    if (isLoading && products.length === 0) {
+        return (
+            <View style={styles.emptyContainer}>
+                <ActivityIndicator size="large" color={colors.primary[700]} />
+            </View>
+        );
+    }
+
+    if (loadError && products.length === 0) {
+        return (
+            <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>{loadError}</Text>
+                <Text style={styles.emptySubtitle}>Check your connection and try again</Text>
+
+                <TouchableOpacity style={styles.scanButton} activeOpacity={0.85} onPress={handleRefresh}>
+                    <Text style={styles.scanButtonText}>Retry</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     if (products.length === 0) {
         return (
             <View style={styles.emptyContainer}>
@@ -191,6 +235,9 @@ export default function HistoryScreen() {
                 </TouchableOpacity>
             </View>
 
+            {/* A refresh failed, but the products already loaded are still shown. */}
+            {loadError.length > 0 && <Text style={styles.errorText}>{loadError}</Text>}
+
             <FlatList
                 data={visibleProducts}
                 keyExtractor={(item) => item.barcode}
@@ -198,6 +245,9 @@ export default function HistoryScreen() {
                 style={styles.panel}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} tintColor={colors.primary[700]} />
+                }
                 ListEmptyComponent={<Text style={styles.noResultsText}>No products found</Text>}
             />
 
@@ -310,6 +360,12 @@ const styles = StyleSheet.create({
     listContent: {
         gap: spacing.md,
         padding: spacing.lg,
+    },
+    errorText: {
+        ...textStyles.small,
+        color: colors.semantic.error,
+        textAlign: "center",
+        marginBottom: spacing.md,
     },
     noResultsText: {
         ...textStyles.small,

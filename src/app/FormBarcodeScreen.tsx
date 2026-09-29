@@ -124,30 +124,43 @@ export default function FormBarcodeScreen() {
         setScanError("");
         setIsLoadingProduct(true);
 
+        let product;
+
         try {
-            const product = await fetchProduct(trimmedBarcode);
-
-            if (!isMountedRef.current) {
-                return;
-            }
-
-            setIsLoadingProduct(false);
-
-            if (!product) {
-                setScanError("Product not found in Open Food Facts.");
-                return;
-            }
-
-            addScan(product);
-            router.push({ pathname: "/result/[id]", params: { id: product.barcode } });
+            product = await fetchProduct(trimmedBarcode);
         } catch {
-            if (!isMountedRef.current) {
-                return;
+            if (isMountedRef.current) {
+                setIsLoadingProduct(false);
+                setScanError("Could not fetch product information. Try again.");
             }
-
-            setIsLoadingProduct(false);
-            setScanError("Could not fetch product information. Try again.");
+            return;
         }
+
+        if (!product) {
+            if (isMountedRef.current) {
+                setIsLoadingProduct(false);
+                setScanError("Product not found in Open Food Facts.");
+            }
+            return;
+        }
+
+        // Saved to the user's history in Supabase before showing the result.
+        try {
+            await addScan(product);
+        } catch {
+            if (isMountedRef.current) {
+                setIsLoadingProduct(false);
+                setScanError("Could not save this scan to your history. Try again.");
+            }
+            return;
+        }
+
+        if (!isMountedRef.current) {
+            return;
+        }
+
+        setIsLoadingProduct(false);
+        router.push({ pathname: "/result/[id]", params: { id: product.barcode } });
     };
 
     // Full-screen modal with an X on the upper left to close it.

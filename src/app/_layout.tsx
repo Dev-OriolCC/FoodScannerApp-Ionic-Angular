@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { appFonts } from '../theme/fonts';
+import { useScanHistorySync } from '../provider/useScanHistorySync';
 import '../../global.css';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
@@ -18,6 +19,7 @@ SplashScreen.preventAutoHideAsync();
 function RootNavigator() {
     const [fontsLoaded] = useFonts(appFonts);
     const { isLoaded, isSignedIn } = useAuth();
+    useScanHistorySync();
 
     // Keep the splash up until Clerk has restored the saved session, so a
     // signed-in user never flashes the auth screens on launch.
