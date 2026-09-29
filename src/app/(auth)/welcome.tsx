@@ -2,6 +2,7 @@ import React from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useSocialAuth } from "../../provider/useSocialAuth";
 import { colors, fontFamily, spacing } from "../../theme";
 
@@ -22,7 +23,7 @@ export default function WelcomeScreen() {
             <StatusBar barStyle="dark-content" />
 
             <View style={styles.hero}>
-                <View style={styles.logoPlaceholder} />
+                <Image source={require("../../../assets/icon.png")} style={styles.logo} contentFit="contain" />
                 <Text style={styles.brand}>Sellómetro</Text>
                 <Text style={styles.welcomeTitle}>Welcome to Sellómetro</Text>
             </View>
@@ -84,12 +85,10 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         paddingHorizontal: spacing.xl,
     },
-    logoPlaceholder: {
+    logo: {
         width: 72,
         height: 72,
-        borderWidth: 2,
-        borderColor: colors.primary[700],
-        borderRadius: 8,
+        borderRadius: 16,
         marginBottom: spacing.lg,
     },
     brand: {

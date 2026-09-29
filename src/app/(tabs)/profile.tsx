@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AnimatedBlobatar } from "@blobatar/react-native/animated";
 import { colors, fontFamily, radius, shadows, spacing, textStyles } from "../../theme";
 import { surprised} from "blobatar/expression";
+import { useScanStore } from "../../store/useScanStore";
 
 // Same surface and panel colors as the auth screens (login.tsx).
 const SURFACE_BG = "#FEF7FF";
@@ -46,15 +47,8 @@ function shortenEmail(email: string) {
 }
 
 const PROFILE_LOAD_DELAY = 900;
-const INSIGHTS_REFRESH_DELAY = 900;
 
-// UI only for now: static stats and advice until the real scan data is wired in.
-const STATS = [
-    { label: "Healthy", value: "4" },
-    { label: "Unhealthy", value: "12" },
-    { label: "Total", value: "16" },
-];
-
+// UI only for now: static advice until the AI summary is wired in.
 const AI_SUMMARY =
     "After a weekend of small treats like chocolate it's a great idea to drink a lot of water. Recommend to have some protein etc etc...";
 
@@ -63,14 +57,28 @@ export default function ProfileScreen() {
     const { user, isLoaded: isUserLoaded } = useUser();
     const { signOut } = useAuth();
 
+    const products = useScanStore((state) => state.products);
+    const scanUserId = useScanStore((state) => state.userId);
+    const isLoadingScans = useScanStore((state) => state.isLoading);
+    const loadHistory = useScanStore((state) => state.loadHistory);
+
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-    const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [logoutError, setLogoutError] = useState("");
 
     const email = user?.primaryEmailAddress?.emailAddress ?? "";
+
+    // Counters from the user's scan history. "unknown" products (no nutrition
+    // data) only count towards the total.
+    const healthyCount = products.filter((product) => product.healthStatus === "healthy").length;
+    const unhealthyCount = products.filter((product) => product.healthStatus === "unhealthy").length;
+    const stats = [
+        { label: "Healthy", value: healthyCount },
+        { label: "Unhealthy", value: unhealthyCount },
+        { label: "Total", value: products.length },
+    ];
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -81,15 +89,9 @@ export default function ProfileScreen() {
     }, []);
 
     const handleRefreshInsights = () => {
-        if (isRefreshingInsights) {
-            return;
+        if (scanUserId) {
+            loadHistory(scanUserId);
         }
-
-        setIsRefreshingInsights(true);
-
-        setTimeout(() => {
-            setIsRefreshingInsights(false);
-        }, INSIGHTS_REFRESH_DELAY);
     };
 
     const handleEditProfile = () => router.push("/edit-profile");
@@ -141,7 +143,7 @@ export default function ProfileScreen() {
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
-                        refreshing={isRefreshingInsights}
+                        refreshing={isLoadingScans}
                         onRefresh={handleRefreshInsights}
                         colors={[colors.primary[700]]}
                         tintColor={colors.primary[700]}
@@ -171,26 +173,28 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                {/* stats + AI advice */}
-                {isRefreshingInsights ? (
-                    <InsightsSkeleton />
-                ) : (
-                    <View style={styles.insightsCard}>
-                        <View style={styles.statsPanel}>
-                            {STATS.map((stat) => (
-                                <View key={stat.label} style={styles.statItem}>
-                                    <Text style={styles.statLabel}>{stat.label}</Text>
+                {/* stats + AI advice (only the numbers pulse while the history loads) */}
+                <View style={styles.insightsCard}>
+                    <View style={styles.statsPanel}>
+                        {stats.map((stat) => (
+                            <View key={stat.label} style={styles.statItem}>
+                                <Text style={styles.statLabel}>{stat.label}</Text>
+                                {isLoadingScans ? (
+                                    <Pulse>
+                                        <View style={[styles.skeletonOnPanel, styles.skeletonStatValue]} />
+                                    </Pulse>
+                                ) : (
                                     <Text style={styles.statValue}>{stat.value}</Text>
-                                </View>
-                            ))}
-                        </View>
-
-                        <View style={styles.summaryPanel}>
-                            <Text style={styles.summaryTitle}>AI-Powered Advice Summary</Text>
-                            <Text style={styles.summaryText}>{AI_SUMMARY}</Text>
-                        </View>
+                                )}
+                            </View>
+                        ))}
                     </View>
-                )}
+
+                    <View style={styles.summaryPanel}>
+                        <Text style={styles.summaryTitle}>AI-Powered Advice Summary</Text>
+                        <Text style={styles.summaryText}>{AI_SUMMARY}</Text>
+                    </View>
+                </View>
 
                 {/* general options (UI only for now) */}
                 <Text style={styles.sectionTitle}>General</Text>
@@ -337,13 +341,16 @@ function ProfileSkeleton() {
     );
 }
 
-// Placeholder for the stats + AI advice card (also shown while pull-to-refresh runs).
+// Placeholder for the stats + AI advice card, same column layout as the loaded stats.
 function InsightsSkeleton() {
     return (
         <View style={styles.insightsCard}>
             <View style={styles.statsPanel}>
                 {[0, 1, 2].map((index) => (
-                    <View key={index} style={[styles.skeletonOnPanel, styles.skeletonStat]} />
+                    <View key={index} style={styles.statItem}>
+                        <View style={[styles.skeletonOnPanel, styles.skeletonStatLabel]} />
+                        <View style={[styles.skeletonOnPanel, styles.skeletonStatValue]} />
+                    </View>
                 ))}
             </View>
 
@@ -589,10 +596,19 @@ const styles = StyleSheet.create({
         height: 24,
         borderRadius: 12,
     },
-    skeletonStat: {
-        width: 80,
-        height: 68,
+    // Label (28px line) and value (44px line) placeholders keep the same height
+    // as the real text, so the stats panel doesn't jump when the numbers arrive.
+    skeletonStatLabel: {
+        width: 72,
+        height: 20,
+        borderRadius: 10,
+        marginVertical: 4,
+    },
+    skeletonStatValue: {
+        width: 48,
+        height: 36,
         borderRadius: radius.md,
+        marginVertical: 4,
     },
     skeletonTitle: {
         width: "70%",

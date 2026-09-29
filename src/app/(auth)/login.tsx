@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useSignIn } from "@clerk/expo";
 import { alertIfSessionTask } from "../../lib/authNavigation";
 import { parseClerkError } from "../../lib/clerkErrors";
@@ -113,7 +114,7 @@ export default function LoginScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.hero}>
-                    <View style={styles.logoPlaceholder} />
+                    <Image source={require("../../../assets/icon.png")} style={styles.logo} contentFit="contain" />
                     <Text style={styles.brand}>Sellómetro</Text>
                     <Text style={styles.title}>Sign in</Text>
                 </View>
@@ -222,12 +223,10 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         paddingHorizontal: spacing.xl,
     },
-    logoPlaceholder: {
+    logo: {
         width: 72,
         height: 72,
-        borderWidth: 2,
-        borderColor: colors.primary[700],
-        borderRadius: 8,
+        borderRadius: 16,
         marginBottom: spacing.lg,
     },
     brand: {
