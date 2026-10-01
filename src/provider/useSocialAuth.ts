@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert } from "react-native";
 import { useSSO } from "@clerk/expo";
+import * as AuthSession from "expo-auth-session";
 import { alertIfSessionTask } from "../lib/authNavigation";
 import { parseClerkError } from "../lib/clerkErrors";
 
@@ -15,7 +16,10 @@ export function useSocialAuth() {
     const signInWithSocial = async (strategy: SocialStrategy) => {
         setIsSocialLoading(true);
         try {
-            const { createdSessionId, setActive } = await startSSOFlow({ strategy });
+            // Same URL Clerk builds by default, spelled out so the link to the
+            // `sso-callback` route that catches the redirect stays obvious.
+            const redirectUrl = AuthSession.makeRedirectUri({ path: "sso-callback" });
+            const { createdSessionId, setActive } = await startSSOFlow({ strategy, redirectUrl });
 
             // No session means the user closed the browser; that is not an error.
             if (createdSessionId && setActive) {
