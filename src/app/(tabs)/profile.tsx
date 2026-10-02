@@ -15,10 +15,12 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth, useUser } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AnimatedBlobatar } from "@blobatar/react-native/animated";
 import { colors, fontFamily, radius, shadows, spacing, textStyles } from "../../theme";
 import { surprised} from "blobatar/expression";
 import { useScanStore } from "../../store/useScanStore";
+import { ONBOARDING_SEEN_KEY } from "../../constants/onboarding";
 
 // Same surface and panel colors as the auth screens (login.tsx).
 const SURFACE_BG = "#FEF7FF";
@@ -95,6 +97,12 @@ export default function ProfileScreen() {
     };
 
     const handleEditProfile = () => router.push("/edit-profile");
+
+    // Testing only: clears the "seen" flag and replays the onboarding.
+    const handleEnableOnboarding = async () => {
+        await AsyncStorage.removeItem(ONBOARDING_SEEN_KEY);
+        router.push("/onboarding");
+    };
 
     const handleOpenLogout = () => {
         setLogoutError("");
@@ -221,6 +229,13 @@ export default function ProfileScreen() {
                     <MenuRow label="Privacy Policy" />
                     <MenuRow label="Get Help" />
                 </View>
+
+                {/* Testing only: remove before release */}
+                {__DEV__ && (
+                    <View style={styles.group}>
+                        <MenuRow label="Enable Onboarding" onPress={handleEnableOnboarding} />
+                    </View>
+                )}
             </ScrollView>
 
             <Modal
