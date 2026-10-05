@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
     },
     brand: {
-        fontFamily: fontFamily.bold,
+        fontFamily: fontFamily.display,
         fontSize: 24,
         lineHeight: 32,
         color: colors.secondary[700],

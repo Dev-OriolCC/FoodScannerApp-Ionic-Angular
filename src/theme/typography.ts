@@ -1,17 +1,24 @@
 /**
  * Sellómetro design system — typography.
  *
- * Poppins is loaded (see `theme/fonts.ts`) as separate static weights, so on
+ * Fonts are loaded (see `theme/fonts.ts`) as separate static weights, so on
  * native each weight is its own `fontFamily` string — plain CSS `fontWeight`
  * won't switch faces. Pair a size from `textStyles` with a family from
- * `fontFamily` (or the matching `font-poppins-*` / `text-*` NativeWind classes).
+ * `fontFamily` (or the matching `font-*` / `text-*` NativeWind classes).
+ *
+ * - Inter: all UI text.
+ * - Bricolage Grotesque (`display`): the "Sellómetro" brand title only.
+ * - Barlow Condensed (`badge*`): NOM-051 octagon badges only.
  */
 export const fontFamily = {
-    light: "Poppins_300Light",
-    regular: "Poppins_400Regular",
-    medium: "Poppins_500Medium",
-    semiBold: "Poppins_600SemiBold",
-    bold: "Poppins_700Bold",
+    light: "Inter_300Light",
+    regular: "Inter_400Regular",
+    medium: "Inter_500Medium",
+    semiBold: "Inter_600SemiBold",
+    bold: "Inter_700Bold",
+    display: "BricolageGrotesque_700Bold",
+    badge: "BarlowCondensed_700Bold",
+    badgeExtraBold: "BarlowCondensed_800ExtraBold",
 } as const;
 
 export const textStyles = {

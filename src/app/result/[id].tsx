@@ -34,7 +34,7 @@ function Octagon({ lines }: { lines: string[] }) {
             </Svg>
             <View style={styles.octagonTextBox}>
                 {lines.map((line) => (
-                    <Text key={line} style={styles.labelText}>
+                    <Text key={line} style={styles.octagonText}>
                         {line}
                     </Text>
                 ))}
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
         backgroundColor: SURFACE_BG,
     },
     screenTitle: {
-        fontFamily: fontFamily.bold,
+        fontFamily: fontFamily.display,
         fontSize: 28,
         lineHeight: 36,
         color: colors.primary[700],
@@ -309,6 +309,14 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
+    // Condensed face fits the long seal words (e.g. "SATURADAS") at a larger size.
+    octagonText: {
+        fontFamily: fontFamily.badgeExtraBold,
+        fontSize: 16,
+        lineHeight: 18,
+        color: LABEL_TEXT,
+        textAlign: "center",
+    },
     labelText: {
         fontFamily: fontFamily.semiBold,
         fontSize: 12,
@@ -331,13 +339,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
     },
     happyFace: {
-        fontFamily: fontFamily.bold,
+        fontFamily: fontFamily.badgeExtraBold,
         fontSize: 40,
         lineHeight: 48,
         color: LABEL_TEXT,
     },
     bigOctagonSubtext: {
-        fontFamily: fontFamily.semiBold,
+        fontFamily: fontFamily.badge,
         fontSize: 13,
         lineHeight: 18,
         color: LABEL_TEXT,

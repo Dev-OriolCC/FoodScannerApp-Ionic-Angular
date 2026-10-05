@@ -29,14 +29,19 @@
   --color-info: #42a5f5;
   --color-success: #66bb6a;
 
-  /* Font families (static Poppins weights — see theme/fonts.ts) */
-  --font-poppins-light: "Poppins_300Light";
-  --font-poppins-regular: "Poppins_400Regular";
-  --font-poppins-medium: "Poppins_500Medium";
-  --font-poppins-semibold: "Poppins_600SemiBold";
-  --font-poppins-bold: "Poppins_700Bold";
+  /* Font families (static weights — see theme/fonts.ts) */
+  --font-inter-light: "Inter_300Light";
+  --font-inter-regular: "Inter_400Regular";
+  --font-inter-medium: "Inter_500Medium";
+  --font-inter-semibold: "Inter_600SemiBold";
+  --font-inter-bold: "Inter_700Bold";
+  /* Brand title ("Sellómetro") only */
+  --font-display: "BricolageGrotesque_700Bold";
+  /* NOM-051 octagon badges only */
+  --font-badge: "BarlowCondensed_700Bold";
+  --font-badge-extrabold: "BarlowCondensed_800ExtraBold";
 
-  /* Type scale — font-size + line-height (pair with a font-poppins-* class) */
+  /* Type scale — font-size + line-height (pair with a font-inter-* class) */
   --text-h1: 32px;
   --text-h1--line-height: 40px;
   --text-h2: 24px;
