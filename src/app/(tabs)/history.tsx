@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
+import { HistoryCard } from "../../components/history/HistoryCard";
+import { Icon } from "../../components/Icon";
 import { ScannedProduct, useScanStore } from "../../store/useScanStore";
 import { colors, fontFamily, radius, shadows, spacing, textStyles } from "../../theme";
 
@@ -22,28 +23,19 @@ import { colors, fontFamily, radius, shadows, spacing, textStyles } from "../../
 const SURFACE_BG = "#FEF7FF";
 const PANEL_BG = "#D9E7CB";
 
-type HistoryFilter = "az" | "za" | "dateDesc" | "dateAsc" | "favorites";
+// Image backgrounds of the cards, used in turn (same tints as the Home recent scans).
+const CARD_TINTS = ["#F3EFE6", colors.primary[100], "#E3F0FB"];
 
-// e.g. "Sep 25, 2026, 10:33 AM"
-function formatScanDate(timestamp: number) {
-    return new Date(timestamp).toLocaleString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-    });
-}
+type HistorySort = "az" | "za" | "dateDesc" | "dateAsc";
 
-const FILTER_LABELS: Record<HistoryFilter, string> = {
+const SORT_LABELS: Record<HistorySort, string> = {
     az: "A-Z",
     za: "Z-A",
     dateDesc: "Date Descending",
     dateAsc: "Date Ascending",
-    favorites: "Favorites",
 };
 
-const FILTER_OPTIONS: HistoryFilter[] = ["az", "za", "dateDesc", "dateAsc", "favorites"];
+const SORT_OPTIONS: HistorySort[] = ["az", "za", "dateDesc", "dateAsc"];
 
 export default function HistoryScreen() {
     const router = useRouter();
@@ -55,8 +47,10 @@ export default function HistoryScreen() {
     const loadError = useScanStore((state) => state.loadError);
     const loadHistory = useScanStore((state) => state.loadHistory);
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeFilter, setActiveFilter] = useState<HistoryFilter>("dateDesc");
-    const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+    const [activeSort, setActiveSort] = useState<HistorySort>("dateDesc");
+    const [isSortModalVisible, setIsSortModalVisible] = useState(false);
+    // "History" tab shows every scan, "Favorites" only the starred ones.
+    const [showFavorites, setShowFavorites] = useState(false);
     // Products are identified by their barcode.
     const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
     const selectedProduct = products.find((product) => product.barcode === selectedProductId);
@@ -72,24 +66,23 @@ export default function HistoryScreen() {
                 return false;
             }
 
-            return activeFilter === "favorites" ? product.isFavorite : true;
+            return showFavorites ? product.isFavorite : true;
         });
 
         return [...filteredProducts].sort((first, second) => {
-            switch (activeFilter) {
+            switch (activeSort) {
                 case "az":
                     return first.name.localeCompare(second.name);
                 case "za":
                     return second.name.localeCompare(first.name);
                 case "dateAsc":
                     return first.scannedAt - second.scannedAt;
-                case "favorites":
                 case "dateDesc":
                 default:
                     return second.scannedAt - first.scannedAt;
             }
         });
-    }, [activeFilter, products, searchQuery]);
+    }, [activeSort, products, searchQuery, showFavorites]);
 
     const handleDelete = (id: string) => {
         setSelectedProductId(id);
@@ -127,17 +120,17 @@ export default function HistoryScreen() {
         }
     };
 
-    const handleOpenFilters = () => {
-        setIsFilterModalVisible(true);
+    const handleOpenSort = () => {
+        setIsSortModalVisible(true);
     };
 
-    const handleCloseFilters = () => {
-        setIsFilterModalVisible(false);
+    const handleCloseSort = () => {
+        setIsSortModalVisible(false);
     };
 
-    const handleSelectFilter = (filter: HistoryFilter) => {
-        setActiveFilter(filter);
-        setIsFilterModalVisible(false);
+    const handleSelectSort = (sort: HistorySort) => {
+        setActiveSort(sort);
+        setIsSortModalVisible(false);
     };
 
     const handleViewProduct = (id: string) => {
@@ -147,35 +140,14 @@ export default function HistoryScreen() {
 
     const handleScanBarcode = () => router.push("/FormBarcodeScreen");
 
-    const renderItem = ({ item }: { item: ScannedProduct }) => (
-        <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => handleViewProduct(item.barcode)}>
-            {/* Visual hint that the card opens the product's Result screen. */}
-            <Ionicons name="open-outline" size={18} color={colors.secondary[500]} style={styles.cardOpenIcon} />
-
-            {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} style={styles.cardImage} contentFit="cover" />
-            ) : (
-                <View style={styles.cardImage} />
-            )}
-
-            <View style={styles.cardBody}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.cardDate}>{formatScanDate(item.scannedAt)}</Text>
-
-                <View style={styles.cardActions}>
-                    <TouchableOpacity style={styles.actionButton} hitSlop={4} onPress={() => handleDelete(item.barcode)}>
-                        <Ionicons name="trash-outline" size={20} color={colors.secondary[700]} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} hitSlop={4} onPress={() => handleToggleFavorite(item.barcode)}>
-                        <Ionicons
-                            name={item.isFavorite ? "star" : "star-outline"}
-                            size={20}
-                            color={colors.secondary[700]}
-                        />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </TouchableOpacity>
+    const renderItem = ({ item, index }: { item: ScannedProduct; index: number }) => (
+        <HistoryCard
+            product={item}
+            tint={CARD_TINTS[index % CARD_TINTS.length]}
+            onPress={() => handleViewProduct(item.barcode)}
+            onDelete={() => handleDelete(item.barcode)}
+            onToggleFavorite={() => handleToggleFavorite(item.barcode)}
+        />
     );
 
     // First load: show a spinner instead of flashing the empty state.
@@ -230,8 +202,31 @@ export default function HistoryScreen() {
                         <Ionicons name="close-circle-outline" size={20} color={colors.secondary[500]} />
                     </TouchableOpacity>
                 )}
-                <TouchableOpacity hitSlop={8} onPress={handleOpenFilters}>
+                <TouchableOpacity hitSlop={8} onPress={handleOpenSort}>
                     <Ionicons name="menu" size={24} color={colors.secondary[700]} />
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.segmented}>
+                <TouchableOpacity
+                    style={[styles.segment, !showFavorites && styles.segmentActive]}
+                    activeOpacity={0.85}
+                    onPress={() => setShowFavorites(false)}
+                >
+                    <Icon name="history" size={20} color={showFavorites ? colors.secondary[500] : "#FFFFFF"} />
+                    <Text style={[styles.segmentText, !showFavorites && styles.segmentTextActive]}>History</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.segment, showFavorites && styles.segmentActive]}
+                    activeOpacity={0.85}
+                    onPress={() => setShowFavorites(true)}
+                >
+                    <Ionicons
+                        name={showFavorites ? "star" : "star-outline"}
+                        size={18}
+                        color={showFavorites ? "#FFFFFF" : colors.secondary[500]}
+                    />
+                    <Text style={[styles.segmentText, showFavorites && styles.segmentTextActive]}>Favorites</Text>
                 </TouchableOpacity>
             </View>
 
@@ -248,7 +243,11 @@ export default function HistoryScreen() {
                 refreshControl={
                     <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} tintColor={colors.primary[700]} />
                 }
-                ListEmptyComponent={<Text style={styles.noResultsText}>No products found</Text>}
+                ListEmptyComponent={
+                    <Text style={styles.noResultsText}>
+                        {showFavorites && !searchQuery ? "No favorite products yet" : "No products found"}
+                    </Text>
+                }
             />
 
             <Modal
@@ -287,27 +286,27 @@ export default function HistoryScreen() {
 
             <Modal
                 transparent
-                visible={isFilterModalVisible}
+                visible={isSortModalVisible}
                 animationType="fade"
-                onRequestClose={handleCloseFilters}
+                onRequestClose={handleCloseSort}
             >
-                <Pressable style={styles.modalShade} onPress={handleCloseFilters}>
+                <Pressable style={styles.modalShade} onPress={handleCloseSort}>
                     <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-                        <Text style={styles.modalTitle}>Filter Products</Text>
+                        <Text style={styles.modalTitle}>Sort Products</Text>
 
                         <View style={styles.filterOptions}>
-                            {FILTER_OPTIONS.map((filter) => {
-                                const isActive = activeFilter === filter;
+                            {SORT_OPTIONS.map((sort) => {
+                                const isActive = activeSort === sort;
 
                                 return (
                                     <TouchableOpacity
-                                        key={filter}
+                                        key={sort}
                                         style={[styles.filterOption, isActive && styles.filterOptionActive]}
                                         activeOpacity={0.85}
-                                        onPress={() => handleSelectFilter(filter)}
+                                        onPress={() => handleSelectSort(sort)}
                                     >
                                         <Text style={[styles.filterOptionText, isActive && styles.filterOptionTextActive]}>
-                                            {FILTER_LABELS[filter]}
+                                            {SORT_LABELS[sort]}
                                         </Text>
                                         {isActive && (
                                             <Ionicons name="checkmark-circle" size={22} color={colors.primary[700]} />
@@ -336,7 +335,7 @@ const styles = StyleSheet.create({
         gap: spacing.md,
         height: 48,
         backgroundColor: "#FFFFFF",
-        borderRadius: radius.xl,
+        borderRadius: 24,
         borderWidth: 1,
         borderColor: colors.secondary[100],
         paddingHorizontal: spacing.lg,
@@ -350,6 +349,35 @@ const styles = StyleSheet.create({
         paddingVertical: 0,
     },
 
+    /* history / favorites toggle */
+    segmented: {
+        flexDirection: "row",
+        height: 44,
+        padding: spacing.xs,
+        borderRadius: 22,
+        backgroundColor: colors.secondary[100],
+        marginBottom: spacing.lg,
+    },
+    segment: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: spacing.sm,
+        borderRadius: 18,
+    },
+    segmentActive: {
+        backgroundColor: colors.primary[700],
+    },
+    segmentText: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: 16,
+        color: colors.secondary[500],
+    },
+    segmentTextActive: {
+        color: "#FFFFFF",
+    },
+
     /* list */
     panel: {
         flex: 1,
@@ -359,7 +387,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         gap: spacing.md,
-        padding: spacing.lg,
+        padding: spacing.md,
     },
     errorText: {
         ...textStyles.small,
@@ -372,55 +400,6 @@ const styles = StyleSheet.create({
         color: colors.secondary[500],
         textAlign: "center",
         paddingVertical: spacing.xl,
-    },
-
-    /* product card */
-    card: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.md,
-        backgroundColor: "#FFFFFF",
-        borderRadius: radius.lg,
-        padding: spacing.md,
-        ...shadows.level1,
-    },
-    cardImage: {
-        width: 56,
-        height: 56,
-        borderRadius: radius.sm,
-        backgroundColor: colors.secondary[100],
-    },
-    cardOpenIcon: {
-        position: "absolute",
-        top: spacing.md,
-        right: spacing.md,
-    },
-    cardBody: {
-        flex: 1,
-        // Keeps long product names from running under the open icon.
-        paddingRight: spacing.xl,
-    },
-    cardTitle: {
-        ...textStyles.h4,
-        fontFamily: fontFamily.semiBold,
-        color: colors.secondary[700],
-    },
-    cardDate: {
-        ...textStyles.small,
-        color: colors.secondary[500],
-    },
-    cardActions: {
-        flexDirection: "row",
-        gap: spacing.sm,
-        marginTop: spacing.xs,
-    },
-    actionButton: {
-        alignItems: "center",
-        justifyContent: "center",
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: PANEL_BG,
     },
 
     /* empty state */
@@ -500,7 +479,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.primary[700],
+        backgroundColor: colors.semantic.error,//colors.primary[700],
         borderRadius: 24,
         height: 48,
     },
