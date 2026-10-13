@@ -6,27 +6,42 @@ import {
     Pressable,
     RefreshControl,
     ScrollView,
+    StatusBar,
     StyleSheet,
-    Switch,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import { useAuth, useUser } from "@clerk/expo";
-import { Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import Svg, { Path } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AnimatedBlobatar } from "@blobatar/react-native/animated";
+import { surprised } from "blobatar/expression";
 import { colors, fontFamily, radius, shadows, spacing, textStyles } from "../../theme";
-import { surprised} from "blobatar/expression";
-import { useScanStore } from "../../store/useScanStore";
+import { ContainsSeal, OctagonSeal } from "../../components/WarningSeal";
+import { ContainsWarningId, ExcessWarningId } from "../../constants/nom051";
+import { getWarnings } from "../../lib/nom051";
+import { ScannedProduct, useScanStore } from "../../store/useScanStore";
 import { ONBOARDING_SEEN_KEY } from "../../constants/onboarding";
 
-// Same surface and panel colors as the auth screens (login.tsx).
+// Profile-only colors from the profile mock; not part of the token set.
+const SCREEN_BG = "#F6FAF6";
+const CHIP_BG = "#F1F5F1";
+const AVATAR_BG = "#C8E6C9";
+const DANGER_BG = "#FDECEA";
+const HERO_LINE = "rgba(255,255,255,0.06)";
 const SURFACE_BG = "#FEF7FF";
-const PANEL_BG = "#D9E7CB";
 
-const AVATAR_SIZE = 88;
+// Thick "circuit" line behind the avatar, in hero coordinates (same idea as the Home hero card).
+const HERO_LINE_PATH = "M-20 70 L30 82 L110 112";
+
+const AVATAR_SIZE = 72;
+const AVATAR_BORDER = 3;
+// How far the stats card climbs over the green header.
+const HERO_OVERLAP = 40;
 const MAX_EMAIL_LENGTH = 22;
 
 // Keeps long emails on one line: cuts the part before the "@" and keeps the
@@ -50,12 +65,61 @@ function shortenEmail(email: string) {
 
 const PROFILE_LOAD_DELAY = 900;
 
-// UI only for now: static advice until the AI summary is wired in.
-const AI_SUMMARY =
-    "After a weekend of small treats like chocolate it's a great idea to drink a lot of water. Recommend to have some protein etc etc...";
+type SealId = ExcessWarningId | ContainsWarningId;
+
+// Every NOM-051 seal: short name for the chips, phrase for the summary text.
+const SEALS: { id: SealId; name: string; phrase: string; isOctagon: boolean }[] = [
+    { id: "sugars", name: "Sugars", phrase: "excess sugars", isOctagon: true },
+    { id: "calories", name: "Calories", phrase: "excess calories", isOctagon: true },
+    { id: "saturatedFat", name: "Sat. fat", phrase: "excess saturated fat", isOctagon: true },
+    { id: "sodium", name: "Sodium", phrase: "excess sodium", isOctagon: true },
+    { id: "sweeteners", name: "Sweeteners", phrase: "contains sweeteners", isOctagon: false },
+    { id: "caffeine", name: "Caffeine", phrase: "contains caffeine", isOctagon: false },
+    { id: "colorants", name: "Colorants", phrase: "contains colorants", isOctagon: false },
+];
+
+type SealCount = (typeof SEALS)[number] & { count: number };
+
+// How many scanned products carry each seal, most frequent first. Seals that
+// never appear are left out.
+function countSeals(products: ScannedProduct[]): SealCount[] {
+    const counts: Partial<Record<SealId, number>> = {};
+
+    for (const product of products) {
+        const { excess, contains } = getWarnings(product);
+
+        for (const id of [...excess, ...contains]) {
+            counts[id] = (counts[id] ?? 0) + 1;
+        }
+    }
+
+    return SEALS.map((seal) => ({ ...seal, count: counts[seal.id] ?? 0 }))
+        .filter((seal) => seal.count > 0)
+        .sort((a, b) => b.count - a.count);
+}
+
+// UI only for now: a short sentence built from the counts, until the AI summary is wired in.
+function buildSummary(sealCounts: SealCount[], total: number, noSeals: number) {
+    if (total === 0) {
+        return "Scan a few products to see which seals show up most often in your history.";
+    }
+
+    const [first, second] = sealCounts;
+
+    if (!first) {
+        return "None of your scanned products carried seals so far.";
+    }
+
+    const mostOften = `${first.phrase.charAt(0).toUpperCase()}${first.phrase.slice(1)} is the seal that appears most often in your recent scans`;
+    const followedBy = second ? `, followed by ${second.phrase}.` : ".";
+    const productsLabel = total === 1 ? "product" : "products";
+
+    return `${mostOften}${followedBy} ${noSeals} of your ${total} scanned ${productsLabel} carried no seals.`;
+}
 
 export default function ProfileScreen() {
     const router = useRouter();
+    const isFocused = useIsFocused();
     const { user, isLoaded: isUserLoaded } = useUser();
     const { signOut } = useAuth();
 
@@ -71,16 +135,18 @@ export default function ProfileScreen() {
     const [logoutError, setLogoutError] = useState("");
 
     const email = user?.primaryEmailAddress?.emailAddress ?? "";
+    // Name from Edit Profile first, then the Clerk username, then the email.
+    const displayName = user?.fullName || user?.username || shortenEmail(email);
 
-    // Counters from the user's scan history. "unknown" products (no nutrition
-    // data) only count towards the total.
-    const healthyCount = products.filter((product) => product.healthStatus === "healthy").length;
-    const unhealthyCount = products.filter((product) => product.healthStatus === "unhealthy").length;
-    const stats = [
-        { label: "Healthy", value: healthyCount },
-        { label: "Unhealthy", value: unhealthyCount },
-        { label: "Total", value: products.length },
-    ];
+    // Counters from the user's scan history. "No seals" also counts the
+    // products without nutrition data, since they carry no seals either.
+    const withSealsCount = products.filter((product) => {
+        const { excess, contains } = getWarnings(product);
+        return excess.length > 0 || contains.length > 0;
+    }).length;
+    const noSealsCount = products.length - withSealsCount;
+    const sealCounts = countSeals(products);
+    const summary = buildSummary(sealCounts, products.length, noSealsCount);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -130,21 +196,65 @@ export default function ProfileScreen() {
         }
     };
 
+    const renderStatsBar = () => {
+        if (products.length === 0) {
+            return <View style={[styles.barSegment, styles.barEmpty]} />;
+        }
+
+        return (
+            <>
+                {withSealsCount > 0 && (
+                    <View style={[styles.barSegment, styles.barWithSeals, { flex: withSealsCount }]} />
+                )}
+                {noSealsCount > 0 && (
+                    <View style={[styles.barSegment, styles.barNoSeals, { flex: noSealsCount }]} />
+                )}
+            </>
+        );
+    };
+
+    // Green header bar to match the hero below it; the tab layout's header stays as is on other tabs.
+    const header = (
+        <Tabs.Screen
+            options={{
+                headerStyle: { backgroundColor: colors.primary[700] },
+                headerTitleStyle: { fontFamily: fontFamily.semiBold, fontSize: 18, color: "#FFFFFF" },
+            }}
+        />
+    );
+
+    // White status bar icons on the green header, only while this tab is open.
+    const statusBar = isFocused && <StatusBar barStyle="light-content" />;
+
     if (isLoadingProfile || !isUserLoaded) {
         return (
             <View style={styles.container}>
-                <View style={styles.loadingWrap}>
-                    <View style={styles.spinnerHalo}>
-                        <ActivityIndicator size="large" color={colors.primary[700]} />
-                    </View>
-                </View>
+                {header}
+                {statusBar}
                 <ProfileSkeleton />
             </View>
         );
     }
 
+    const stats = [
+        {
+            label: "Total scans",
+            value: products.length,
+            icon: <MaterialCommunityIcons name="barcode-scan" size={24} color={colors.primary[700]} />,
+        },
+        { label: "With seals", value: withSealsCount, icon: <OctagonSeal size={22} /> },
+        {
+            label: "No seals",
+            value: noSealsCount,
+            icon: <Ionicons name="checkmark-circle" size={26} color={colors.primary[500]} />,
+        },
+    ];
+
     return (
         <View style={styles.container}>
+            {header}
+            {statusBar}
+
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 alwaysBounceVertical
@@ -154,13 +264,15 @@ export default function ProfileScreen() {
                         refreshing={isLoadingScans}
                         onRefresh={handleRefreshInsights}
                         colors={[colors.primary[700]]}
-                        tintColor={colors.primary[700]}
-                        progressBackgroundColor={SURFACE_BG}
+                        tintColor="#FFFFFF"
+                        progressBackgroundColor="#FFFFFF"
                     />
                 }
             >
-                {/* user info */}
-                <View style={styles.userRow}>
+                {/* green header: avatar, name and edit button */}
+                <View style={styles.hero}>
+                    <HeroBackground />
+
                     <View style={styles.avatar}>
                         <AnimatedBlobatar
                             name={email || "guest"}
@@ -172,68 +284,112 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.userInfo}>
                         <Text style={styles.username} numberOfLines={1}>
-                            {shortenEmail(email)}
+                            {displayName}
                         </Text>
                         <TouchableOpacity style={styles.editButton} activeOpacity={0.85} onPress={handleEditProfile}>
-                            <Ionicons name="create-outline" size={16} color="#FFFFFF" />
-                            <Text style={styles.editButtonText}>Edit Profile</Text>
+                            <Feather name="edit-2" size={15} color={colors.primary[700]} />
+                            <Text style={styles.editButtonText}>Edit profile</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* stats + AI advice (only the numbers pulse while the history loads) */}
-                <View style={styles.insightsCard}>
-                    <View style={styles.statsPanel}>
-                        {stats.map((stat) => (
-                            <View key={stat.label} style={styles.statItem}>
-                                <Text style={styles.statLabel}>{stat.label}</Text>
-                                {isLoadingScans ? (
-                                    <Pulse>
-                                        <View style={[styles.skeletonOnPanel, styles.skeletonStatValue]} />
-                                    </Pulse>
-                                ) : (
-                                    <Text style={styles.statValue}>{stat.value}</Text>
-                                )}
-                            </View>
+                {/* scan counters (only the numbers pulse while the history loads) */}
+                <View style={styles.statsCard}>
+                    <View style={styles.statsRow}>
+                        {stats.map((stat, index) => (
+                            <React.Fragment key={stat.label}>
+                                {index > 0 && <View style={styles.statDivider} />}
+                                <View style={styles.statItem}>
+                                    <View style={styles.statIcon}>{stat.icon}</View>
+                                    {isLoadingScans ? (
+                                        <Pulse>
+                                            <View style={[styles.skeletonBlock, styles.skeletonStatValue]} />
+                                        </Pulse>
+                                    ) : (
+                                        <Text style={styles.statValue}>{stat.value}</Text>
+                                    )}
+                                    <Text style={styles.statLabel}>{stat.label}</Text>
+                                </View>
+                            </React.Fragment>
                         ))}
                     </View>
 
-                    <View style={styles.summaryPanel}>
-                        <Text style={styles.summaryTitle}>AI-Powered Advice Summary</Text>
-                        <Text style={styles.summaryText}>{AI_SUMMARY}</Text>
+                    {/* share of products with and without seals */}
+                    {isLoadingScans ? (
+                        <Pulse>
+                            <View style={[styles.bar, styles.skeletonBlock]} />
+                        </Pulse>
+                    ) : (
+                        <View style={styles.bar}>{renderStatsBar()}</View>
+                    )}
+                </View>
+
+                {/* scan summary */}
+                <View style={styles.card}>
+                    <View style={styles.summaryHeader}>
+                        <View style={styles.iconBox}>
+                            <MaterialIcons name="auto-awesome" size={20} color={colors.primary[700]} />
+                        </View>
+                        <Text style={styles.summaryTitle}>Scan summary</Text>
+                        <View style={styles.aiBadge}>
+                            <Text style={styles.aiBadgeText}>AI-generated</Text>
+                        </View>
                     </View>
+
+                    {isLoadingScans ? (
+                        <SummarySkeleton />
+                    ) : (
+                        <>
+                            <Text style={styles.summaryText}>{summary}</Text>
+
+                            {sealCounts.length > 0 && (
+                                <View style={styles.chips}>
+                                    {sealCounts.map((seal) => (
+                                        <View key={seal.id} style={styles.chip}>
+                                            {seal.isOctagon ? (
+                                                <OctagonSeal size={16} />
+                                            ) : (
+                                                <ContainsSeal width={18} height={11} />
+                                            )}
+                                            <Text style={styles.chipLabel}>{seal.name}</Text>
+                                            <Text style={styles.chipCount}>{seal.count}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                        </>
+                    )}
                 </View>
 
                 {/* general options (UI only for now) */}
                 <Text style={styles.sectionTitle}>General</Text>
-
                 <View style={styles.group}>
-                    <MenuRow label="Language" value="English (US)" />
+                    <MenuRow icon="globe-outline" label="Language" value="English (US)" />
                     <MenuRow
-                        label="DarkMode"
-                        right={(
-                            <Switch
-                                value={isDarkMode}
-                                onValueChange={setIsDarkMode}
-                                trackColor={{ false: colors.secondary[300], true: colors.accent }}
-                                thumbColor="#FFFFFF"
-                            />
-                        )}
+                        icon="moon-outline"
+                        label="Dark mode"
+                        onPress={() => setIsDarkMode((value) => !value)}
+                        right={<Toggle value={isDarkMode} onValueChange={setIsDarkMode} />}
                     />
-                    <MenuRow label="Security" />
-                    <MenuRow label="Logout" isHighlighted onPress={handleOpenLogout} />
+                    <MenuRow icon="shield-checkmark-outline" label="Security" isLast />
                 </View>
 
+                {/* support options (UI only for now) */}
+                <Text style={styles.sectionTitle}>Support</Text>
                 <View style={styles.group}>
-                    <MenuRow label="Contact Us" />
-                    <MenuRow label="Privacy Policy" />
-                    <MenuRow label="Get Help" />
+                    <MenuRow icon="mail-outline" label="Contact us" />
+                    <MenuRow icon="document-text-outline" label="Privacy policy" />
+                    <MenuRow icon="help-circle-outline" label="Get help" isLast />
+                </View>
+
+                <View style={[styles.group, styles.groupSpaced]}>
+                    <MenuRow icon="log-out-outline" label="Log out" isDanger isLast onPress={handleOpenLogout} />
                 </View>
 
                 {/* Testing only: remove before release */}
                 {__DEV__ && (
-                    <View style={styles.group}>
-                        <MenuRow label="Enable Onboarding" onPress={handleEnableOnboarding} />
+                    <View style={[styles.group, styles.groupSpaced]}>
+                        <MenuRow icon="refresh-outline" label="Enable Onboarding" isLast onPress={handleEnableOnboarding} />
                     </View>
                 )}
             </ScrollView>
@@ -281,29 +437,80 @@ export default function ProfileScreen() {
     );
 }
 
+// Decoration of the green header: a faint line, plus a green block above it so
+// pulling the list down (iOS bounce) never shows the light background.
+function HeroBackground() {
+    return (
+        <>
+            <View style={styles.heroOverscroll} />
+            <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+                <Path d={HERO_LINE_PATH} stroke={HERO_LINE} strokeWidth={14} strokeLinejoin="round" fill="none" />
+            </Svg>
+        </>
+    );
+}
+
 interface MenuRowProps {
+    icon: React.ComponentProps<typeof Ionicons>["name"];
     label: string;
     value?: string;
     right?: React.ReactNode;
-    isHighlighted?: boolean;
+    // Red row for destructive actions (log out); no chevron.
+    isDanger?: boolean;
+    // The last row of a group has no divider under it.
+    isLast?: boolean;
     onPress?: () => void;
 }
 
-// One row of an options group: label on the left, optional value / control on
-// the right (a chevron by default).
-function MenuRow({ label, value, right, isHighlighted, onPress }: MenuRowProps) {
+// One row of an options group: icon and label on the left, optional value /
+// control on the right (a chevron by default).
+function MenuRow({ icon, label, value, right, isDanger, isLast, onPress }: MenuRowProps) {
+    const tint = isDanger ? colors.semantic.error : colors.primary[700];
+
     return (
-        <TouchableOpacity
-            style={[styles.row, isHighlighted && styles.rowHighlighted]}
-            activeOpacity={onPress ? 0.85 : 1}
-            onPress={onPress}
-        >
-            <Text style={styles.rowLabel}>{label}</Text>
-            <View style={styles.rowRight}>
+        <TouchableOpacity activeOpacity={onPress ? 0.7 : 1} onPress={onPress}>
+            <View style={styles.row}>
+                <View style={[styles.iconBox, isDanger && styles.iconBoxDanger]}>
+                    <Ionicons name={icon} size={20} color={tint} />
+                </View>
+                <Text style={[styles.rowLabel, isDanger && { color: tint }]}>{label}</Text>
                 {!!value && <Text style={styles.rowValue}>{value}</Text>}
-                {right ?? <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />}
+                {right ?? (!isDanger && <Ionicons name="chevron-forward" size={18} color={colors.secondary[300]} />)}
             </View>
+            {!isLast && <View style={styles.rowDivider} />}
         </TouchableOpacity>
+    );
+}
+
+interface ToggleProps {
+    value: boolean;
+    onValueChange: (value: boolean) => void;
+}
+
+// Material 3 style switch: outlined track with a small thumb when off, filled
+// track with a bigger white thumb when on.
+function Toggle({ value, onValueChange }: ToggleProps) {
+    const progress = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+    useEffect(() => {
+        Animated.timing(progress, { toValue: value ? 1 : 0, duration: 150, useNativeDriver: true }).start();
+    }, [progress, value]);
+
+    const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [0, 21] });
+    const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [1, 24 / 18] });
+
+    return (
+        <Pressable
+            style={[styles.toggleTrack, value && styles.toggleTrackOn]}
+            hitSlop={8}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: value }}
+            onPress={() => onValueChange(!value)}
+        >
+            <Animated.View
+                style={[styles.toggleThumb, value && styles.toggleThumbOn, { transform: [{ translateX }, { scale }] }]}
+            />
+        </Pressable>
     );
 }
 
@@ -327,143 +534,175 @@ function Pulse({ children }: { children: React.ReactNode }) {
     return <Animated.View style={{ opacity }}>{children}</Animated.View>;
 }
 
-// Placeholder for the whole screen, laid out like the loaded content.
+// Placeholder for the whole screen, laid out like the loaded content. The
+// green header stays still; only the placeholder blocks pulse.
 function ProfileSkeleton() {
     return (
-        <Pulse>
-            <View style={styles.scrollContent}>
-                <View style={styles.userRow}>
-                    <View style={[styles.skeletonBlock, styles.skeletonAvatar]} />
-                    <View style={styles.userInfo}>
-                        <View style={[styles.skeletonBlock, styles.skeletonName]} />
-                        <View style={[styles.skeletonBlock, styles.skeletonEditButton]} />
+        <View style={styles.scrollContent}>
+            <View style={styles.hero}>
+                <HeroBackground />
+                <Pulse>
+                    <View style={[styles.avatar, styles.skeletonOnHero]} />
+                </Pulse>
+                <View style={styles.userInfo}>
+                    <Pulse>
+                        <View style={[styles.skeletonOnHero, styles.skeletonName]} />
+                    </Pulse>
+                    <Pulse>
+                        <View style={[styles.skeletonOnHero, styles.skeletonEditButton]} />
+                    </Pulse>
+                </View>
+            </View>
+
+            <Pulse>
+                <View style={styles.statsCard}>
+                    <View style={styles.statsRow}>
+                        {[0, 1, 2].map((index) => (
+                            <React.Fragment key={index}>
+                                {index > 0 && <View style={styles.statDivider} />}
+                                <View style={styles.statItem}>
+                                    <View style={[styles.skeletonBlock, styles.skeletonStatIcon]} />
+                                    <View style={[styles.skeletonBlock, styles.skeletonStatValue]} />
+                                    <View style={[styles.skeletonBlock, styles.skeletonStatLabel]} />
+                                </View>
+                            </React.Fragment>
+                        ))}
                     </View>
+                    <View style={[styles.bar, styles.skeletonBlock]} />
                 </View>
 
-                <InsightsSkeleton />
+                <View style={styles.card}>
+                    <View style={styles.summaryHeader}>
+                        <View style={[styles.iconBox, styles.skeletonBlock]} />
+                        <View style={[styles.skeletonBlock, styles.skeletonTitle]} />
+                    </View>
+                    <SummarySkeleton />
+                </View>
 
                 <View style={[styles.skeletonBlock, styles.skeletonSectionTitle]} />
                 <View style={styles.group}>
-                    {[0, 1, 2, 3].map((index) => (
-                        <View key={index} style={styles.skeletonRow}>
-                            <View style={[styles.skeletonOnGroup, styles.skeletonRowLabel]} />
-                            <View style={[styles.skeletonOnGroup, styles.skeletonRowValue]} />
+                    {[0, 1, 2].map((index) => (
+                        <View key={index}>
+                            <View style={styles.row}>
+                                <View style={[styles.iconBox, styles.skeletonBlock]} />
+                                <View style={[styles.skeletonBlock, styles.skeletonRowLabel]} />
+                            </View>
+                            {index < 2 && <View style={styles.rowDivider} />}
                         </View>
                     ))}
                 </View>
-            </View>
-        </Pulse>
+            </Pulse>
+        </View>
     );
 }
 
-// Placeholder for the stats + AI advice card, same column layout as the loaded stats.
-function InsightsSkeleton() {
+// Placeholder for the summary text and seal chips.
+function SummarySkeleton() {
     return (
-        <View style={styles.insightsCard}>
-            <View style={styles.statsPanel}>
-                {[0, 1, 2].map((index) => (
-                    <View key={index} style={styles.statItem}>
-                        <View style={[styles.skeletonOnPanel, styles.skeletonStatLabel]} />
-                        <View style={[styles.skeletonOnPanel, styles.skeletonStatValue]} />
-                    </View>
+        <Pulse>
+            <View style={styles.skeletonText}>
+                <View style={[styles.skeletonBlock, styles.skeletonLine]} />
+                <View style={[styles.skeletonBlock, styles.skeletonLine]} />
+                <View style={[styles.skeletonBlock, styles.skeletonLineShort]} />
+            </View>
+            <View style={styles.chips}>
+                {[96, 104, 88].map((width) => (
+                    <View key={width} style={[styles.chip, { width }]} />
                 ))}
             </View>
-
-            <View style={styles.summaryPanel}>
-                <View style={[styles.skeletonOnPanel, styles.skeletonTitle]} />
-                <View style={[styles.skeletonOnPanel, styles.skeletonLine]} />
-                <View style={[styles.skeletonOnPanel, styles.skeletonLineShort]} />
-                <View style={[styles.skeletonOnPanel, styles.skeletonLine]} />
-            </View>
-        </View>
+        </Pulse>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: SCREEN_BG,
     },
     scrollContent: {
-        paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.xl,
+        paddingBottom: spacing["2xl"],
     },
 
-    /* loading */
-    loadingWrap: {
-        alignItems: "center",
-        marginBottom: spacing.md,
-        marginTop: spacing.sm,
-    },
-    spinnerHalo: {
-        width: 74,
-        height: 74,
-        borderRadius: 37,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.accentLight,
-        borderWidth: 8,
-        borderColor: PANEL_BG,
-    },
-
-    /* user info */
-    userRow: {
+    /* green header */
+    hero: {
         flexDirection: "row",
         alignItems: "center",
-        gap: spacing.md,
-        marginBottom: spacing.lg,
+        gap: spacing.lg,
+        backgroundColor: colors.primary[700],
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
+        paddingHorizontal: 20,
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.lg + HERO_OVERLAP,
+    },
+    heroOverscroll: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: "100%",
+        height: 600,
+        backgroundColor: colors.primary[700],
     },
     avatar: {
-        width: AVATAR_SIZE,
-        height: AVATAR_SIZE,
-        borderRadius: AVATAR_SIZE / 2,
+        width: AVATAR_SIZE + AVATAR_BORDER * 2,
+        height: AVATAR_SIZE + AVATAR_BORDER * 2,
+        borderRadius: AVATAR_SIZE / 2 + AVATAR_BORDER,
+        borderWidth: AVATAR_BORDER,
+        borderColor: "#FFFFFF",
         overflow: "hidden",
-        backgroundColor: PANEL_BG,
+        backgroundColor: AVATAR_BG,
     },
     userInfo: {
         flex: 1,
         alignItems: "flex-start",
-        gap: spacing.xs,
+        gap: spacing.sm,
     },
     username: {
-        ...textStyles.h3,
         alignSelf: "stretch",
-        color: colors.secondary[700],
+        fontFamily: fontFamily.bold,
+        fontSize: 24,
+        lineHeight: 32,
+        color: "#FFFFFF",
     },
     editButton: {
         flexDirection: "row",
         alignItems: "center",
-        gap: spacing.xs,
-        backgroundColor: colors.secondary[700],
-        borderRadius: radius.xl,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
+        gap: spacing.sm,
+        height: 36,
+        paddingHorizontal: spacing.lg,
+        borderRadius: 18,
+        backgroundColor: "#FFFFFF",
     },
     editButtonText: {
-        ...textStyles.tiny,
-        fontFamily: fontFamily.medium,
-        color: "#FFFFFF",
+        fontFamily: fontFamily.semiBold,
+        fontSize: 14,
+        color: colors.primary[700],
     },
 
-    /* stats + AI advice */
-    insightsCard: {
+    /* scan counters */
+    statsCard: {
+        marginTop: -HERO_OVERLAP,
+        marginHorizontal: spacing.lg,
+        padding: spacing.lg,
+        paddingTop: 18,
         borderRadius: radius.xl,
-        overflow: "hidden",
-        marginBottom: spacing.xl,
+        backgroundColor: "#FFFFFF",
+        ...shadows.level2,
     },
-    statsPanel: {
+    statsRow: {
         flexDirection: "row",
-        justifyContent: "space-around",
-        backgroundColor: colors.accentLight,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
     },
     statItem: {
+        flex: 1,
         alignItems: "center",
-        minWidth: 80,
     },
-    statLabel: {
-        ...textStyles.h3,
-        color: colors.secondary[700],
+    statDivider: {
+        width: 1,
+        backgroundColor: colors.secondary[100],
+    },
+    statIcon: {
+        height: 26,
+        justifyContent: "center",
     },
     statValue: {
         fontFamily: fontFamily.bold,
@@ -471,18 +710,107 @@ const styles = StyleSheet.create({
         lineHeight: 44,
         color: colors.secondary[700],
     },
-    summaryPanel: {
-        backgroundColor: PANEL_BG,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+    statLabel: {
+        ...textStyles.small,
+        color: colors.secondary[500],
+    },
+    bar: {
+        flexDirection: "row",
+        gap: spacing.xs,
+        height: 8,
+        borderRadius: 4,
+        marginTop: spacing.lg,
+    },
+    barSegment: {
+        borderRadius: 4,
+    },
+    barWithSeals: {
+        backgroundColor: colors.secondary[700],
+    },
+    barNoSeals: {
+        backgroundColor: colors.semantic.success,
+    },
+    barEmpty: {
+        flex: 1,
+        backgroundColor: colors.secondary[100],
+    },
+
+    /* cards and option groups */
+    card: {
+        marginTop: spacing.xl,
+        marginHorizontal: spacing.lg,
+        padding: spacing.lg,
+        borderRadius: radius.xl,
+        backgroundColor: "#FFFFFF",
+        ...shadows.level1,
+    },
+    iconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.primary[100],
+    },
+    iconBoxDanger: {
+        backgroundColor: DANGER_BG,
+    },
+
+    /* scan summary */
+    summaryHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.md,
     },
     summaryTitle: {
         ...textStyles.h3,
+        flex: 1,
         color: colors.secondary[700],
     },
+    aiBadge: {
+        height: 24,
+        justifyContent: "center",
+        paddingHorizontal: 10,
+        borderRadius: 12,
+        backgroundColor: colors.primary[100],
+    },
+    aiBadgeText: {
+        fontFamily: fontFamily.semiBold,
+        fontSize: 13,
+        color: colors.primary[700],
+    },
     summaryText: {
-        ...textStyles.small,
-        fontStyle: "italic",
+        fontFamily: fontFamily.regular,
+        fontSize: 15,
+        lineHeight: 22,
+        color: colors.secondary[500],
+        marginTop: spacing.md,
+    },
+    chips: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        columnGap: 10,
+        rowGap: spacing.sm,
+        marginTop: spacing.lg,
+    },
+    chip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        height: 32,
+        paddingLeft: spacing.sm,
+        paddingRight: spacing.md,
+        borderRadius: 16,
+        backgroundColor: CHIP_BG,
+    },
+    chipLabel: {
+        fontFamily: fontFamily.medium,
+        fontSize: 15,
+        color: colors.secondary[700],
+    },
+    chipCount: {
+        fontFamily: fontFamily.bold,
+        fontSize: 15,
         color: colors.secondary[700],
     },
 
@@ -490,37 +818,70 @@ const styles = StyleSheet.create({
     sectionTitle: {
         ...textStyles.h3,
         color: colors.secondary[700],
+        marginTop: spacing.xl,
         marginBottom: spacing.sm,
+        marginHorizontal: 20,
     },
     group: {
-        backgroundColor: colors.primary[700],
-        borderRadius: radius.lg,
-        overflow: "hidden",
+        marginHorizontal: spacing.lg,
+        paddingHorizontal: spacing.lg,
         paddingVertical: spacing.xs,
-        marginBottom: spacing.xl,
+        borderRadius: radius.xl,
+        backgroundColor: "#FFFFFF",
+        ...shadows.level1,
+    },
+    groupSpaced: {
+        marginTop: spacing.lg,
     },
     row: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
-        minHeight: 44,
-        paddingHorizontal: spacing.lg,
-    },
-    rowHighlighted: {
-        backgroundColor: colors.secondary[700],
+        gap: spacing.md,
+        minHeight: 60,
     },
     rowLabel: {
-        ...textStyles.h4,
-        color: "#FFFFFF",
-    },
-    rowRight: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.sm,
+        flex: 1,
+        fontFamily: fontFamily.medium,
+        fontSize: 17,
+        lineHeight: 24,
+        color: colors.secondary[700],
     },
     rowValue: {
-        ...textStyles.small,
-        color: "#FFFFFF",
+        fontFamily: fontFamily.regular,
+        fontSize: 15,
+        color: colors.secondary[500],
+    },
+    // Starts under the label, not under the icon.
+    rowDivider: {
+        height: 1,
+        marginLeft: 36 + spacing.md,
+        backgroundColor: colors.secondary[100],
+    },
+
+    /* dark mode switch */
+    toggleTrack: {
+        width: 52,
+        height: 32,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: colors.secondary[300],
+        backgroundColor: colors.secondary[100],
+    },
+    toggleTrackOn: {
+        borderColor: colors.primary[700],
+        backgroundColor: colors.primary[700],
+    },
+    toggleThumb: {
+        position: "absolute",
+        left: 4,
+        top: 5,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: colors.secondary[500],
+    },
+    toggleThumbOn: {
+        backgroundColor: "#FFFFFF",
     },
 
     /* logout modal (same look as the delete modal in history.tsx) */
@@ -590,79 +951,68 @@ const styles = StyleSheet.create({
     skeletonBlock: {
         backgroundColor: colors.secondary[100],
     },
-    skeletonOnPanel: {
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-    },
-    skeletonOnGroup: {
-        backgroundColor: "rgba(255, 255, 255, 0.25)",
-    },
-    skeletonAvatar: {
-        width: AVATAR_SIZE,
-        height: AVATAR_SIZE,
-        borderRadius: AVATAR_SIZE / 2,
+    skeletonOnHero: {
+        backgroundColor: "rgba(255, 255, 255, 0.3)",
     },
     skeletonName: {
-        width: "70%",
+        width: 160,
         height: 24,
         borderRadius: 12,
-    },
-    skeletonEditButton: {
-        width: 96,
-        height: 24,
-        borderRadius: 12,
-    },
-    // Label (28px line) and value (44px line) placeholders keep the same height
-    // as the real text, so the stats panel doesn't jump when the numbers arrive.
-    skeletonStatLabel: {
-        width: 72,
-        height: 20,
-        borderRadius: 10,
         marginVertical: 4,
     },
+    skeletonEditButton: {
+        width: 120,
+        height: 36,
+        borderRadius: 18,
+    },
+    skeletonStatIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        marginVertical: 1,
+    },
+    // Same height as the real number (44px line), so the card doesn't jump when the numbers arrive.
     skeletonStatValue: {
         width: 48,
         height: 36,
         borderRadius: radius.md,
         marginVertical: 4,
     },
+    skeletonStatLabel: {
+        width: 72,
+        height: 14,
+        borderRadius: 7,
+        marginVertical: 3,
+    },
     skeletonTitle: {
-        width: "70%",
-        height: 24,
-        borderRadius: 12,
-        marginBottom: spacing.sm,
+        width: 140,
+        height: 20,
+        borderRadius: 10,
+    },
+    skeletonText: {
+        gap: spacing.sm,
+        marginTop: spacing.md + 4,
     },
     skeletonLine: {
         width: "100%",
         height: 14,
         borderRadius: 7,
-        marginBottom: spacing.sm,
     },
     skeletonLineShort: {
-        width: "72%",
+        width: "64%",
         height: 14,
         borderRadius: 7,
-        marginBottom: spacing.sm,
     },
     skeletonSectionTitle: {
         width: 90,
-        height: 24,
-        borderRadius: 12,
-        marginBottom: spacing.sm,
-    },
-    skeletonRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        minHeight: 44,
-        paddingHorizontal: spacing.lg,
+        height: 22,
+        borderRadius: 11,
+        marginTop: spacing.xl + 3,
+        marginBottom: spacing.sm + 3,
+        marginHorizontal: 20,
     },
     skeletonRowLabel: {
-        width: 110,
-        height: 16,
-        borderRadius: 8,
-    },
-    skeletonRowValue: {
-        width: 40,
+        width: 120,
         height: 16,
         borderRadius: 8,
     },
