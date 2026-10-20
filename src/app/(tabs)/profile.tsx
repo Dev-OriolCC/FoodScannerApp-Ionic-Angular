@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.primary[700],
+        backgroundColor: colors.semantic.error,
         borderRadius: 24,
         height: 48,
     },

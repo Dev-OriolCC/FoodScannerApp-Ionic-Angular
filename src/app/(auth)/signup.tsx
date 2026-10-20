@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Alert,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -60,6 +62,20 @@ export default function SignUpScreen() {
     const [emailError, setEmailError] = useState("");
     const [passwordError, setPasswordError] = useState("");
     const [confirmPasswordError, setConfirmPasswordError] = useState("");
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+    // On Android (edge-to-edge) the "keyboard hidden" event reports a position above
+    // the navigation bar, so KeyboardAvoidingView never fully resets and the form
+    // stays pushed up over the title. Only enabling it while the keyboard is open
+    // guarantees the layout snaps back once the keyboard closes.
+    useEffect(() => {
+        const showSub = Keyboard.addListener("keyboardDidShow", () => setIsKeyboardVisible(true));
+        const hideSub = Keyboard.addListener("keyboardDidHide", () => setIsKeyboardVisible(false));
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
 
     const goBack = () => router.back();
 
@@ -101,147 +117,154 @@ export default function SignUpScreen() {
             <StatusBar barStyle="dark-content" />
             <KeyboardAvoidingView
                 style={styles.flex}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                behavior="padding"
+                enabled={Platform.OS === "ios" || isKeyboardVisible}
             >
-                <TouchableOpacity style={styles.backButton} onPress={goBack} hitSlop={12}>
-                    <Ionicons name="chevron-back" size={26} color={colors.secondary[700]} />
-                </TouchableOpacity>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    <TouchableOpacity style={styles.backButton} onPress={goBack} hitSlop={12}>
+                        <Ionicons name="chevron-back" size={26} color={colors.secondary[700]} />
+                    </TouchableOpacity>
 
-                <View style={styles.hero}>
-                    <Image source={require("../../../assets/icon.png")} style={styles.logo} contentFit="contain" />
-                    <Text style={styles.brand}>Sellómetro</Text>
-                    <Text style={styles.title}>Sign up</Text>
-                </View>
-
-                <View style={styles.panel}>
-                    <Text style={styles.label}>Email</Text>
-                    <View style={[styles.inputBox, emailError ? styles.inputBoxError : null]}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your email"
-                            placeholderTextColor={colors.secondary[500]}
-                            value={email}
-                            onChangeText={setEmail}
-                            onBlur={() => setEmailError(validateEmail(email))}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
+                    <View style={styles.hero}>
+                        <Image source={require("../../../assets/icon.png")} style={styles.logo} contentFit="contain" />
+                        <Text style={styles.brand}>Sellómetro</Text>
+                        <Text style={styles.title}>Sign up</Text>
                     </View>
-                    {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-                    <Text style={[styles.label, styles.fieldLabel]}>Password</Text>
-                    <View style={[styles.inputBox, passwordError ? styles.inputBoxError : null]}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your password"
-                            placeholderTextColor={colors.secondary[500]}
-                            value={password}
-                            onChangeText={setPassword}
-                            onBlur={() => setPasswordError(validatePassword(password))}
-                            secureTextEntry={!showPassword}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowPassword((prev) => !prev)}
-                            hitSlop={8}
-                        >
-                            <Ionicons
-                                name={showPassword ? "eye-outline" : "eye-off-outline"}
-                                size={20}
-                                color={colors.secondary[500]}
+                    <View style={styles.panel}>
+                        <Text style={styles.label}>Email</Text>
+                        <View style={[styles.inputBox, emailError ? styles.inputBoxError : null]}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your email"
+                                placeholderTextColor={colors.secondary[500]}
+                                value={email}
+                                onChangeText={setEmail}
+                                onBlur={() => setEmailError(validateEmail(email))}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoCorrect={false}
                             />
-                        </TouchableOpacity>
-                    </View>
-                    {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+                        </View>
+                        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-                    <Text style={[styles.label, styles.fieldLabel]}>Confirm Password</Text>
-                    <View
-                        style={[
-                            styles.inputBox,
-                            confirmPasswordError ? styles.inputBoxError : null,
-                        ]}
-                    >
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Re-enter your password"
-                            placeholderTextColor={colors.secondary[500]}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            onBlur={() =>
-                                setConfirmPasswordError(
-                                    validateConfirmPassword(password, confirmPassword)
-                                )
-                            }
-                            secureTextEntry={!showConfirmPassword}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowConfirmPassword((prev) => !prev)}
-                            hitSlop={8}
-                        >
-                            <Ionicons
-                                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
-                                size={20}
-                                color={colors.secondary[500]}
+                        <Text style={[styles.label, styles.fieldLabel]}>Password</Text>
+                        <View style={[styles.inputBox, passwordError ? styles.inputBoxError : null]}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your password"
+                                placeholderTextColor={colors.secondary[500]}
+                                value={password}
+                                onChangeText={setPassword}
+                                onBlur={() => setPasswordError(validatePassword(password))}
+                                secureTextEntry={!showPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
                             />
-                        </TouchableOpacity>
-                    </View>
-                    {confirmPasswordError ? (
-                        <Text style={styles.errorText}>{confirmPasswordError}</Text>
-                    ) : null}
-
-                    <TouchableOpacity
-                        style={[styles.signUpButton, !isFormValid && styles.buttonDisabled]}
-                        activeOpacity={0.85}
-                        disabled={!isFormValid || isSubmitting}
-                        onPress={handleSignUp}
-                    >
-                        <Text style={styles.signUpButtonText}>Sign up</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.dividerRow}>
-                        <View style={styles.dividerLine} />
-                        <Text style={styles.dividerText}>or</Text>
-                        <View style={styles.dividerLine} />
-                    </View>
-
-                    <TouchableOpacity
-                        style={styles.socialButton}
-                        activeOpacity={0.85}
-                        disabled={isSocialLoading}
-                        onPress={() => signInWithSocial("oauth_google")}
-                    >
-                        <View style={styles.socialIconCircle}>
-                            <Ionicons name="logo-google" size={16} color={colors.primary[700]} />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword((prev) => !prev)}
+                                hitSlop={8}
+                            >
+                                <Ionicons
+                                    name={showPassword ? "eye-outline" : "eye-off-outline"}
+                                    size={20}
+                                    color={colors.secondary[500]}
+                                />
+                            </TouchableOpacity>
                         </View>
-                        <Text style={styles.socialButtonText}>Continue with Google</Text>
-                    </TouchableOpacity>
+                        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
-                    <TouchableOpacity
-                        style={styles.socialButton}
-                        activeOpacity={0.85}
-                        disabled={isSocialLoading}
-                        onPress={() => signInWithSocial("oauth_facebook")}
-                    >
-                        <View style={styles.socialIconCircle}>
-                            <Ionicons name="logo-facebook" size={16} color={colors.primary[700]} />
+                        <Text style={[styles.label, styles.fieldLabel]}>Confirm Password</Text>
+                        <View
+                            style={[
+                                styles.inputBox,
+                                confirmPasswordError ? styles.inputBoxError : null,
+                            ]}
+                        >
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Re-enter your password"
+                                placeholderTextColor={colors.secondary[500]}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                onBlur={() =>
+                                    setConfirmPasswordError(
+                                        validateConfirmPassword(password, confirmPassword)
+                                    )
+                                }
+                                secureTextEntry={!showConfirmPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowConfirmPassword((prev) => !prev)}
+                                hitSlop={8}
+                            >
+                                <Ionicons
+                                    name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                                    size={20}
+                                    color={colors.secondary[500]}
+                                />
+                            </TouchableOpacity>
                         </View>
-                        <Text style={styles.socialButtonText}>Continue with Facebook</Text>
-                    </TouchableOpacity>
+                        {confirmPasswordError ? (
+                            <Text style={styles.errorText}>{confirmPasswordError}</Text>
+                        ) : null}
 
-                    <View style={styles.signInRow}>
-                        <Text style={styles.signInText}>Already have an account? </Text>
-                        <TouchableOpacity hitSlop={8} onPress={() => router.push("/(auth)/login")}>
-                            <Text style={styles.linkText}>Sign in</Text>
+                        <TouchableOpacity
+                            style={[styles.signUpButton, !isFormValid && styles.buttonDisabled]}
+                            activeOpacity={0.85}
+                            disabled={!isFormValid || isSubmitting}
+                            onPress={handleSignUp}
+                        >
+                            <Text style={styles.signUpButtonText}>Sign up</Text>
                         </TouchableOpacity>
-                    </View>
 
-                    {/* Mount point for Clerk's bot protection on sign-up. */}
-                    <View nativeID="clerk-captcha" />
-                </View>
+                        <View style={styles.dividerRow}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>or</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.socialButton}
+                            activeOpacity={0.85}
+                            disabled={isSocialLoading}
+                            onPress={() => signInWithSocial("oauth_google")}
+                        >
+                            <View style={styles.socialIconCircle}>
+                                <Ionicons name="logo-google" size={16} color={colors.primary[700]} />
+                            </View>
+                            <Text style={styles.socialButtonText}>Continue with Google</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.socialButton}
+                            activeOpacity={0.85}
+                            disabled={isSocialLoading}
+                            onPress={() => signInWithSocial("oauth_facebook")}
+                        >
+                            <View style={styles.socialIconCircle}>
+                                <Ionicons name="logo-facebook" size={16} color={colors.primary[700]} />
+                            </View>
+                            <Text style={styles.socialButtonText}>Continue with Facebook</Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.signInRow}>
+                            <Text style={styles.signInText}>Already have an account? </Text>
+                            <TouchableOpacity hitSlop={8} onPress={() => router.push("/(auth)/login")}>
+                                <Text style={styles.linkText}>Sign in</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Mount point for Clerk's bot protection on sign-up. */}
+                        <View nativeID="clerk-captcha" />
+                    </View>
+                </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -255,12 +278,17 @@ const styles = StyleSheet.create({
     flex: {
         flex: 1,
     },
+    scrollContent: {
+        flexGrow: 1,
+    },
     backButton: {
         paddingHorizontal: spacing.lg,
         paddingTop: spacing.sm,
     },
     hero: {
-        flex: 1,
+        // flexGrow (not flex: 1) so the hero can fill spare space but never
+        // shrinks below its content, which is what let the panel cover the title.
+        flexGrow: 1,
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: spacing.xl,
